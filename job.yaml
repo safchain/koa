@@ -1,0 +1,10 @@
+pre:
+  - echo start
+  - echo toto
+  - ls dsfs
+run:
+  - ls
+mon:
+
+post:
+  - echo end

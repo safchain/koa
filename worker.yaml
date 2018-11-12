@@ -1,0 +1,6 @@
+  host: localhost
+  port: 22
+  username: safchain
+  auth_options:
+    type: public_key
+    public_key: /home/safchain/.ssh/id_rsa
