@@ -22,20 +22,12 @@
 
 syntax = "proto3";
 
-package io;
+package malloc;
 
-enum Flag {
-  READ = 0;
-  WRITE = 1;
-}
-
-message IOEntry {
+message MallocEntry {
     string Type = 1;
     int64 PID = 2;
-    string ProcessName = 4;
-    string Device = 5;
-    Flag Flag = 6;
-    int64 IO = 7;
-    int64 Bytes = 8;
-    int64 Timestamp = 9;
+    string ProcessName = 3;
+    int64 Bytes = 4;
+    int64 Timestamp = 5;
 }

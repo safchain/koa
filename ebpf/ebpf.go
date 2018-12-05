@@ -24,11 +24,12 @@ package ebpf
 
 import (
 	"bytes"
+	"debug/elf"
 	"fmt"
 	"runtime"
 	"strings"
 
-	"github.com/iovisor/gobpf/elf"
+	ebpelf "github.com/iovisor/gobpf/elf"
 
 	ebpf "github.com/safchain/koa/ebpf/module"
 )
@@ -39,15 +40,15 @@ import (
 import "C"
 
 // LoadModule load the ebpf module for the given asset name
-func LoadModule(asset string) (*elf.Module, error) {
+func LoadModule(asset string) (*ebpelf.Module, error) {
 	data, err := ebpf.Asset(asset)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to find eBPF elf binary in bindata")
+		return nil, fmt.Errorf("Unable to find eBPF ebpelf binary in bindata")
 	}
 
 	reader := bytes.NewReader(data)
 
-	module := elf.NewModuleFromReader(reader)
+	module := ebpelf.NewModuleFromReader(reader)
 
 	// load to test if everything is ok
 	err = module.Load(nil)
@@ -55,19 +56,50 @@ func LoadModule(asset string) (*elf.Module, error) {
 		// split to skip to kernel stack trace
 		errs := strings.Split(err.Error(), ":")
 
-		return nil, fmt.Errorf("Unable to load eBPF elf binary (host %s) from bindata: %+v", runtime.GOARCH, errs)
+		return nil, fmt.Errorf("Unable to load eBPF ebpelf binary (host %s) from bindata: %+v", runtime.GOARCH, errs)
 	}
 
 	return module, nil
 }
 
 // EnableKProbes enable the given probes
-func EnableKProbes(module *elf.Module, probes []string) error {
+func EnableKProbes(module *ebpelf.Module, probes []string) error {
 	for _, probe := range probes {
 		if err := module.EnableKprobe(probe, 10); err != nil {
-			return err
+			return fmt.Errorf("Unable to enable kprobe %s: %s", probe, err)
 		}
 	}
 
 	return nil
+}
+
+func EnableUProbe(module *ebpelf.Module, probe string, fnc string, path string) error {
+	file, err := elf.Open(path)
+	if err != nil {
+		return err
+	}
+
+	symbols, err := file.Symbols()
+	if err != nil {
+		return err
+	}
+
+	var offset uint64
+	for _, symbol := range symbols {
+		if symbol.Name == fnc {
+			offset = symbol.Value
+			break
+		}
+	}
+
+	for uprobe := range module.IterUprobes() {
+		if uprobe.Name == probe {
+			if err := ebpelf.AttachUprobe(uprobe, path, offset); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("probe not found: %s", probe)
 }

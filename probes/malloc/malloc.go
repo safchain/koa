@@ -20,11 +20,12 @@
  *
  */
 
-package cpu
+package malloc
 
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 	"unsafe"
 
@@ -36,7 +37,7 @@ import (
 
 // #cgo CFLAGS: -I../../ebpf/include
 // #include <stdint.h>
-// #include "cpu.h"
+// #include "malloc.h"
 import "C"
 
 type Probe struct {
@@ -46,13 +47,13 @@ type Probe struct {
 }
 
 const (
-	Type       = "cpu"
-	probeAsset = "cpu.o"
+	Type       = "malloc"
+	probeAsset = "malloc.o"
 )
 
 var (
-	kprobes = []string{
-		"kprobe/finish_task_switch",
+	uprobes = map[string]string{
+		"uprobe/malloc": "/lib64/libc.so.6",
 	}
 )
 
@@ -77,11 +78,11 @@ func (p *Probe) run(ctx context.Context) {
 				}
 				key = nextKey
 
-				entry := &CPUEntry{
+				entry := &MallocEntry{
 					Type:        Type,
 					PID:         int64(key),
 					ProcessName: C.GoString(&value.name[0]),
-					Nanoseconds: int64(value.ns),
+					Bytes:       int64(value.bytes),
 					Timestamp:   time.Now().UTC().Unix(),
 				}
 				p.sender.Send(entry)
@@ -100,8 +101,12 @@ func New(sender sender.Sender, opts probes.Opts) (*Probe, error) {
 		return nil, err
 	}
 
-	if err = ebpf.EnableKProbes(module, kprobes); err != nil {
-		return nil, err
+	for probe, path := range uprobes {
+		fnc := strings.TrimPrefix(probe, "uprobe/")
+
+		if err := ebpf.EnableUProbe(module, probe, fnc, path); err != nil {
+			return nil, err
+		}
 	}
 
 	cmap := module.Map("value_map")

@@ -33,6 +33,54 @@
 			"revisionTime": "2014-09-22T21:32:25Z"
 		},
 		{
+			"checksumSHA1": "7x1a8CvEGgF8O3jsekeyRpNBKrg=",
+			"path": "github.com/golang/protobuf/proto",
+			"revision": "8d0c54c1246661d9a51ca0ba455d22116d485eaa",
+			"revisionTime": "2018-11-27T19:04:54Z"
+		},
+		{
+			"checksumSHA1": "cQvjaQ6YsQ2s/QOmJeSGMjbyLhU=",
+			"path": "github.com/golang/protobuf/proto/proto3_proto",
+			"revision": "8d0c54c1246661d9a51ca0ba455d22116d485eaa",
+			"revisionTime": "2018-11-27T19:04:54Z"
+		},
+		{
+			"checksumSHA1": "Ap3fxoENMwxwOM77e56TlCVt+7o=",
+			"path": "github.com/golang/protobuf/proto/test_proto",
+			"revision": "8d0c54c1246661d9a51ca0ba455d22116d485eaa",
+			"revisionTime": "2018-11-27T19:04:54Z"
+		},
+		{
+			"checksumSHA1": "WOkXetG3AqJnfVVuqTJvdukcHps=",
+			"path": "github.com/golang/protobuf/protoc-gen-go/descriptor",
+			"revision": "8d0c54c1246661d9a51ca0ba455d22116d485eaa",
+			"revisionTime": "2018-11-27T19:04:54Z"
+		},
+		{
+			"checksumSHA1": "iyybJ/oXMj5pXj5BhuiKyTIVOxs=",
+			"path": "github.com/golang/protobuf/ptypes",
+			"revision": "8d0c54c1246661d9a51ca0ba455d22116d485eaa",
+			"revisionTime": "2018-11-27T19:04:54Z"
+		},
+		{
+			"checksumSHA1": "2/Xg4L9IVGQRJB8zCELZx7/Z4HU=",
+			"path": "github.com/golang/protobuf/ptypes/any",
+			"revision": "8d0c54c1246661d9a51ca0ba455d22116d485eaa",
+			"revisionTime": "2018-11-27T19:04:54Z"
+		},
+		{
+			"checksumSHA1": "RE9rLveNHapyMKQC8p10tbkUE9w=",
+			"path": "github.com/golang/protobuf/ptypes/duration",
+			"revision": "8d0c54c1246661d9a51ca0ba455d22116d485eaa",
+			"revisionTime": "2018-11-27T19:04:54Z"
+		},
+		{
+			"checksumSHA1": "seEwY2xETpK9yHJ9+bHqkLZ0VMU=",
+			"path": "github.com/golang/protobuf/ptypes/timestamp",
+			"revision": "8d0c54c1246661d9a51ca0ba455d22116d485eaa",
+			"revisionTime": "2018-11-27T19:04:54Z"
+		},
+		{
 			"checksumSHA1": "lnWM5jV7zXrA7UvBsX4yU3umOxk=",
 			"path": "github.com/hashicorp/hcl",
 			"revision": "65a6292f0157eff210d03ed1bf6c59b190b8b906",
@@ -99,34 +147,40 @@
 			"revisionTime": "2014-10-17T20:07:13Z"
 		},
 		{
-			"checksumSHA1": "y39rrRRecPR7V/TbMQxsQwBt7Cc=",
+			"checksumSHA1": "5Ulg+zwMZKR6cINO1BtdBO4aVkc=",
+			"origin": "github.com/safchain/gobpf",
 			"path": "github.com/iovisor/gobpf",
-			"revision": "8f8e0b6e4fcbbda9274a9fbfa8751e1eb88cd5d3",
-			"revisionTime": "2018-10-22T06:21:02Z"
+			"revision": "9307803fba9a6ac43ed1a8252ed38c04a21c1f2f",
+			"revisionTime": "2018-09-28T18:25:51Z",
+			"version": "elf-uprobes",
+			"versionExact": "elf-uprobes"
 		},
 		{
-			"checksumSHA1": "d2nr/Uo5/5nV7htIvVFX7yWt0zg=",
+			"checksumSHA1": "l+ABQ8Q33uU857uKFAZAxueRtuI=",
+			"origin": "github.com/safchain/gobpf/bcc",
 			"path": "github.com/iovisor/gobpf/bcc",
-			"revision": "8f8e0b6e4fcbbda9274a9fbfa8751e1eb88cd5d3",
-			"revisionTime": "2018-10-22T06:21:02Z"
+			"revision": "9307803fba9a6ac43ed1a8252ed38c04a21c1f2f",
+			"revisionTime": "2018-09-28T18:25:51Z",
+			"version": "elf-uprobes",
+			"versionExact": "elf-uprobes"
 		},
 		{
-			"checksumSHA1": "CJgLy1tLrg0Xn0REsPsgVCO34zc=",
+			"checksumSHA1": "Ibc8v7rUCyfEVLZcKcfDhO1j9fg=",
+			"origin": "github.com/safchain/gobpf/elf",
 			"path": "github.com/iovisor/gobpf/elf",
-			"revision": "8f8e0b6e4fcbbda9274a9fbfa8751e1eb88cd5d3",
-			"revisionTime": "2018-10-22T06:21:02Z"
+			"revision": "9307803fba9a6ac43ed1a8252ed38c04a21c1f2f",
+			"revisionTime": "2018-09-28T18:25:51Z",
+			"version": "elf-uprobes",
+			"versionExact": "elf-uprobes"
 		},
 		{
 			"checksumSHA1": "pfwftTJRtc7w311xPBpZKKHxW4c=",
+			"origin": "github.com/safchain/gobpf/elf/include",
 			"path": "github.com/iovisor/gobpf/elf/include",
-			"revision": "8f8e0b6e4fcbbda9274a9fbfa8751e1eb88cd5d3",
-			"revisionTime": "2018-10-22T06:21:02Z"
-		},
-		{
-			"checksumSHA1": "8Hjxpu9eaOK5C92srTLQKXzR1+Y=",
-			"path": "github.com/iovisor/gobpf/pkg/bpffs",
-			"revision": "8f8e0b6e4fcbbda9274a9fbfa8751e1eb88cd5d3",
-			"revisionTime": "2018-10-22T06:21:02Z"
+			"revision": "9307803fba9a6ac43ed1a8252ed38c04a21c1f2f",
+			"revisionTime": "2018-09-28T18:25:51Z",
+			"version": "elf-uprobes",
+			"versionExact": "elf-uprobes"
 		},
 		{
 			"checksumSHA1": "DLVZ6DH5ublVeqzM6cn7q24WN9k=",
@@ -195,6 +249,15 @@
 			"revisionTime": "2016-01-10T10:55:54Z"
 		},
 		{
+			"checksumSHA1": "UHVZSL6e8ZbCjNzS7zQQTTUxfdE=",
+			"origin": "github.com/safchain/gobpf/pkg/bpffs",
+			"path": "github.com/safchain/iovisor/pkg/bpffs",
+			"revision": "9307803fba9a6ac43ed1a8252ed38c04a21c1f2f",
+			"revisionTime": "2018-09-28T18:25:51Z",
+			"version": "elf-uprobes",
+			"versionExact": "elf-uprobes"
+		},
+		{
 			"checksumSHA1": "rCJwPgGJqwEhDdS1+l216fYUxMs=",
 			"path": "github.com/spf13/afero",
 			"revision": "d40851caa0d747393da1ffb28f7f9d8b4eeffebd",
@@ -259,6 +322,12 @@
 			"path": "github.com/stretchr/testify/require",
 			"revision": "04af85275a5c7ac09d16bb3b9b2e751ed45154e5",
 			"revisionTime": "2018-10-09T18:43:15Z"
+		},
+		{
+			"checksumSHA1": "ThFld47fsBZklOb0BK7HzSJGbJs=",
+			"path": "golang.org/x/sync/errgroup",
+			"revision": "42b317875d0fa942474b76e1b46a6060d720ae6e",
+			"revisionTime": "2018-11-08T00:20:06Z"
 		},
 		{
 			"checksumSHA1": "fN33yAHLeiRZVo1LNaUzR0XvGSk=",

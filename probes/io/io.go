@@ -39,16 +39,6 @@ import (
 // #include "io.h"
 import "C"
 
-type IOEntry struct {
-	PID         int64
-	ProcessName string
-	Device      string
-	Flag        int64
-	IO          int64
-	Bytes       int64
-	Timestamp   time.Time
-}
-
 type Probe struct {
 	module *elf.Module
 	sender sender.Sender
@@ -56,6 +46,7 @@ type Probe struct {
 }
 
 const (
+	Type       = "io"
 	probeAsset = "io.o"
 )
 
@@ -90,13 +81,14 @@ func (p *Probe) run(ctx context.Context) {
 				key = nextKey
 
 				entry := &IOEntry{
+					Type:        Type,
 					PID:         int64(key.pid),
 					ProcessName: C.GoString(&key.name[0]),
 					Device:      "",
-					Flag:        int64(key.rwflag),
+					Flag:        Flag(key.rwflag),
 					IO:          int64(value.io),
 					Bytes:       int64(value.bytes),
-					Timestamp:   time.Now().UTC(),
+					Timestamp:   time.Now().UTC().Unix(),
 				}
 				p.sender.Send(entry)
 			}

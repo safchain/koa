@@ -32,12 +32,13 @@ import (
 	"github.com/safchain/koa/probes"
 	"github.com/safchain/koa/probes/cpu"
 	"github.com/safchain/koa/probes/io"
+	"github.com/safchain/koa/probes/malloc"
 	"github.com/safchain/koa/sender"
 	"github.com/spf13/cobra"
 )
 
 func exit(err error) {
-	fmt.Fprintf(os.Stderr, "Unable to create io probe: %s\n", err)
+	fmt.Fprintf(os.Stderr, "Unable to create probe: %s\n", err)
 	os.Exit(1)
 }
 
@@ -68,6 +69,12 @@ var rootCmd = &cobra.Command{
 			exit(err)
 		}
 		cpu.Start(ctx)
+
+		malloc, err := malloc.New(stdout, opts)
+		if err != nil {
+			exit(err)
+		}
+		malloc.Start(ctx)
 
 		<-c
 		cancel()

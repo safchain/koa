@@ -84,7 +84,7 @@ int kprobe__blk_mq_start_request(struct pt_regs *ctx)
 SEC("kprobe/blk_account_io_completion")
 int kprobe__blk_account_io_completion(struct pt_regs *ctx)
 {
-	struct request *req = (struct request *)PT_REGS_PARM1(ctx);
+	struct request *req = (void *)ctx->di;
 
 	u64 *tsp = bpf_map_lookup_elem(&start_map, &req);
 	if (tsp == NULL)
