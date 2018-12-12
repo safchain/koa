@@ -29,6 +29,11 @@ import (
 
 type Stdout struct{}
 
+func (s *Stdout) SendBytes(data []byte) error {
+
+	return nil
+}
+
 func (s *Stdout) Send(data interface{}) error {
 	b, err := json.Marshal(data)
 	if err != nil {

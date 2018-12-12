@@ -20,13 +20,22 @@
  *
  */
 
-package probes
+package sender
 
-import (
-	"context"
-)
+type Bundle struct {
+	senders []Sender
+}
 
-type Probe interface {
-	Start(ctx context.Context)
-	Tag(tag string)
+func (b *Bundle) Send(data interface{}) error {
+	for _, sender := range b.senders {
+		sender.Send(data)
+	}
+
+	return nil
+}
+
+func NewBundle(senders ...Sender) *Bundle {
+	return &Bundle{
+		senders: senders,
+	}
 }

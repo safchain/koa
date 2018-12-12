@@ -85,7 +85,7 @@ func (p *Probe) run(ctx context.Context) {
 					PID:         int64(key.pid),
 					ProcessName: C.GoString(&key.name[0]),
 					Device:      "",
-					Flag:        Flag(key.rwflag),
+					Flag:        int64(key.rwflag),
 					IO:          int64(value.io),
 					Bytes:       int64(value.bytes),
 					Timestamp:   time.Now().UTC().Unix(),

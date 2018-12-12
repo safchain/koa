@@ -31,4 +31,7 @@ message CPUEntry {
     string ProcessName = 3;
     int64 Nanoseconds = 4;
     int64 Timestamp = 5;
+
+    int64 Run = 100;
+    string Tag = 101;
 }

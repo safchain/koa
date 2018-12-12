@@ -51,6 +51,11 @@ var rootCmd = &cobra.Command{
 		signal.Notify(c, os.Interrupt)
 
 		stdout := &sender.Stdout{}
+		sql, err := sender.NewPostgres(&io.IOEntry{}, &cpu.CPUEntry{}, &malloc.MallocEntry{})
+		if err != nil {
+			exit(err)
+		}
+		bundle := sender.NewBundle(stdout, sql)
 
 		ctx, cancel := context.WithCancel(context.Background())
 
@@ -58,19 +63,19 @@ var rootCmd = &cobra.Command{
 			Rate: 2 * time.Second,
 		}
 
-		io, err := io.New(stdout, opts)
+		io, err := io.New(bundle, opts)
 		if err != nil {
 			exit(err)
 		}
 		io.Start(ctx)
 
-		cpu, err := cpu.New(stdout, opts)
+		cpu, err := cpu.New(bundle, opts)
 		if err != nil {
 			exit(err)
 		}
 		cpu.Start(ctx)
 
-		malloc, err := malloc.New(stdout, opts)
+		malloc, err := malloc.New(bundle, opts)
 		if err != nil {
 			exit(err)
 		}

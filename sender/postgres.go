@@ -20,13 +20,36 @@
  *
  */
 
-package probes
+package sender
 
 import (
-	"context"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-type Probe interface {
-	Start(ctx context.Context)
-	Tag(tag string)
+type Postgres struct {
+	db *gorm.DB
+}
+
+func (p *Postgres) Send(data interface{}) error {
+	p.db.Create(data)
+
+	return nil
+}
+
+func NewPostgres(structs ...interface{}) (*Postgres, error) {
+	db, err := gorm.Open("postgres", "host=127.0.0.1 port=5432 user=postgres dbname=postgres password=mysecretpassword sslmode=disable")
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	//postgres:password@127.0.0.1:5432/postgres?sslmode=disable
+
+	for _, s := range structs {
+		db.AutoMigrate(s)
+	}
+
+	return &Postgres{
+		db: db,
+	}, nil
 }

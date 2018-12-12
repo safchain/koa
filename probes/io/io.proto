@@ -24,18 +24,17 @@ syntax = "proto3";
 
 package io;
 
-enum Flag {
-  READ = 0;
-  WRITE = 1;
-}
-
 message IOEntry {
     string Type = 1;
     int64 PID = 2;
     string ProcessName = 4;
     string Device = 5;
-    Flag Flag = 6;
+    int64 Flag = 6;
     int64 IO = 7;
     int64 Bytes = 8;
     int64 Timestamp = 9;
+
+    int64 Run = 100;
+    string Tag = 101;
 }
+
