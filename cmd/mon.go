@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"github.com/safchain/koa/probes"
@@ -37,9 +38,48 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	pids []string
+)
+
+type ProbeID int
+
+const (
+	IOProbe ProbeID = iota + 1
+	CPUProbe
+	MallocProbe
+)
+
 func exit(err error) {
 	fmt.Fprintf(os.Stderr, "Unable to create probe: %s\n", err)
 	os.Exit(1)
+}
+
+func NewProbe(id ProbeID, sender sender.Sender, opts probes.Opts) (probes.Probe, error) {
+	switch id {
+	case IOProbe:
+		return io.New(sender, opts)
+	case CPUProbe:
+		return cpu.New(sender, opts)
+	case MallocProbe:
+		return malloc.New(sender, opts)
+	}
+
+	return nil, nil
+}
+
+func int64PIDs() []int64 {
+	var p []int64
+
+	for _, s := range pids {
+		i, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			exit(fmt.Errorf("PID %s not valid", s))
+		}
+		p = append(p, i)
+	}
+
+	return p
 }
 
 var rootCmd = &cobra.Command{
@@ -61,25 +101,24 @@ var rootCmd = &cobra.Command{
 
 		opts := probes.Opts{
 			Rate: 2 * time.Second,
+			PIDs: int64PIDs(),
 		}
 
-		io, err := io.New(bundle, opts)
-		if err != nil {
-			exit(err)
-		}
-		io.Start(ctx)
+		var all []probes.Probe
+		for _, id := range []ProbeID{CPUProbe, IOProbe, MallocProbe} {
+			probe, err := NewProbe(id, bundle, opts)
+			if err != nil {
+				exit(err)
+			}
+			probe.SetRunID(int64(os.Getpid()))
+			probe.SetTag("standard")
 
-		cpu, err := cpu.New(bundle, opts)
-		if err != nil {
-			exit(err)
+			all = append(all, probe)
 		}
-		cpu.Start(ctx)
 
-		malloc, err := malloc.New(bundle, opts)
-		if err != nil {
-			exit(err)
+		for _, probe := range all {
+			probe.Start(ctx)
 		}
-		malloc.Start(ctx)
 
 		<-c
 		cancel()
@@ -87,6 +126,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
+	rootCmd.PersistentFlags().StringArrayVarP(&pids, "pid", "p", []string{}, "capture specified pid")
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

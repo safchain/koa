@@ -25,6 +25,7 @@ package io
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -40,9 +41,12 @@ import (
 import "C"
 
 type Probe struct {
+	sync.RWMutex
 	module *elf.Module
 	sender sender.Sender
 	opts   probes.Opts
+	runID  int64
+	tag    string
 }
 
 const (
@@ -58,6 +62,18 @@ var (
 		"kprobe/blk_account_io_completion",
 	}
 )
+
+func (p *Probe) SetTag(tag string) {
+	p.Lock()
+	p.tag = tag
+	p.Unlock()
+}
+
+func (p *Probe) SetRunID(runID int64) {
+	p.Lock()
+	p.runID = runID
+	p.Unlock()
+}
 
 func (p *Probe) run(ctx context.Context) {
 	cmap := p.module.Map("value_map")
@@ -80,16 +96,26 @@ func (p *Probe) run(ctx context.Context) {
 				}
 				key = nextKey
 
+				pid := int64(key.pid)
+				if !p.opts.ContainsPID(pid) {
+					continue
+				}
+
+				p.RLock()
 				entry := &IOEntry{
 					Type:        Type,
-					PID:         int64(key.pid),
+					PID:         pid,
 					ProcessName: C.GoString(&key.name[0]),
 					Device:      "",
 					Flag:        int64(key.rwflag),
 					IO:          int64(value.io),
 					Bytes:       int64(value.bytes),
 					Timestamp:   time.Now().UTC().Unix(),
+					RunID:       p.runID,
+					Tag:         p.tag,
 				}
+				p.RUnlock()
+
 				p.sender.Send(entry)
 			}
 		}

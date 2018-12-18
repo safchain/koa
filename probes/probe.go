@@ -28,5 +28,6 @@ import (
 
 type Probe interface {
 	Start(ctx context.Context)
-	Tag(tag string)
+	SetRunID(runID int64)
+	SetTag(tag string)
 }

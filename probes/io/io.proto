@@ -34,7 +34,7 @@ message IOEntry {
     int64 Bytes = 8;
     int64 Timestamp = 9;
 
-    int64 Run = 100;
+    int64 RunID = 100;
     string Tag = 101;
 }
 

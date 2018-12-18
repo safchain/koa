@@ -28,4 +28,19 @@ import (
 
 type Opts struct {
 	Rate time.Duration
+	PIDs []int64
+}
+
+func (o *Opts) ContainsPID(pid int64) bool {
+	if len(o.PIDs) == 0 {
+		return true
+	}
+
+	for _, p := range o.PIDs {
+		if p == pid {
+			return true
+		}
+	}
+
+	return false
 }

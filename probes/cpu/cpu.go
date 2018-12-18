@@ -25,6 +25,7 @@ package cpu
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -40,9 +41,12 @@ import (
 import "C"
 
 type Probe struct {
+	sync.RWMutex
 	module *elf.Module
 	sender sender.Sender
 	opts   probes.Opts
+	runID  int64
+	tag    string
 }
 
 const (
@@ -55,6 +59,18 @@ var (
 		"kprobe/finish_task_switch",
 	}
 )
+
+func (p *Probe) SetTag(tag string) {
+	p.Lock()
+	p.tag = tag
+	p.Unlock()
+}
+
+func (p *Probe) SetRunID(runID int64) {
+	p.Lock()
+	p.runID = runID
+	p.Unlock()
+}
 
 func (p *Probe) run(ctx context.Context) {
 	cmap := p.module.Map("value_map")
@@ -77,13 +93,23 @@ func (p *Probe) run(ctx context.Context) {
 				}
 				key = nextKey
 
+				pid := int64(key)
+				if !p.opts.ContainsPID(pid) {
+					continue
+				}
+
+				p.RLock()
 				entry := &CPUEntry{
 					Type:        Type,
-					PID:         int64(key),
+					PID:         pid,
 					ProcessName: C.GoString(&value.name[0]),
 					Nanoseconds: int64(value.ns),
 					Timestamp:   time.Now().UTC().Unix(),
+					RunID:       p.runID,
+					Tag:         p.tag,
 				}
+				p.RUnlock()
+
 				p.sender.Send(entry)
 			}
 		}

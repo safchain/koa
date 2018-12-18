@@ -26,6 +26,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -41,9 +42,12 @@ import (
 import "C"
 
 type Probe struct {
+	sync.RWMutex
 	module *elf.Module
 	sender sender.Sender
 	opts   probes.Opts
+	runID  int64
+	tag    string
 }
 
 const (
@@ -56,6 +60,18 @@ var (
 		"uprobe/malloc": "/lib64/libc.so.6",
 	}
 )
+
+func (p *Probe) SetTag(tag string) {
+	p.Lock()
+	p.tag = tag
+	p.Unlock()
+}
+
+func (p *Probe) SetRunID(runID int64) {
+	p.Lock()
+	p.runID = runID
+	p.Unlock()
+}
 
 func (p *Probe) run(ctx context.Context) {
 	cmap := p.module.Map("value_map")
@@ -78,13 +94,23 @@ func (p *Probe) run(ctx context.Context) {
 				}
 				key = nextKey
 
+				pid := int64(key)
+				if !p.opts.ContainsPID(pid) {
+					continue
+				}
+
+				p.RLock()
 				entry := &MallocEntry{
 					Type:        Type,
-					PID:         int64(key),
+					PID:         pid,
 					ProcessName: C.GoString(&value.name[0]),
 					Bytes:       int64(value.bytes),
 					Timestamp:   time.Now().UTC().Unix(),
+					RunID:       p.runID,
+					Tag:         p.tag,
 				}
+				p.RUnlock()
+
 				p.sender.Send(entry)
 			}
 		}

@@ -24,7 +24,6 @@ syntax = "proto3";
 
 package cpu;
 
-
 message CPUEntry {
     string Type = 1;
     int64 PID = 2;
@@ -32,6 +31,6 @@ message CPUEntry {
     int64 Nanoseconds = 4;
     int64 Timestamp = 5;
 
-    int64 Run = 100;
+    int64 RunID = 100;
     string Tag = 101;
 }
