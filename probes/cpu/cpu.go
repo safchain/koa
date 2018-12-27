@@ -42,13 +42,12 @@ import "C"
 
 type Probe struct {
 	sync.RWMutex
-	module  *elf.Module
-	sender  sender.Sender
-	opts    probes.Opts
-	filters *probes.Filters
-	runID   int64
-	tag     string
-	wg      sync.WaitGroup
+	module *elf.Module
+	sender sender.Sender
+	opts   probes.Opts
+	runID  int64
+	tag    string
+	wg     sync.WaitGroup
 }
 
 const (
@@ -85,15 +84,10 @@ func (p *Probe) read(cmap *elf.Map) {
 		}
 		key = nextKey
 
-		pid := int64(key)
-		if !p.filters.ContainsPID(pid) {
-			continue
-		}
-
 		p.RLock()
 		entry := &CPUEntry{
 			Type:        Type,
-			PID:         pid,
+			PID:         int64(key),
 			ProcessName: C.GoString(&value.name[0]),
 			Nanoseconds: int64(value.ns),
 			Timestamp:   time.Now().UTC().Unix(),
@@ -111,6 +105,7 @@ func (p *Probe) run(ctx context.Context) {
 	defer p.wg.Done()
 
 	cmap := p.module.Map("value_map")
+	p.read(cmap)
 
 	ticker := time.NewTicker(p.opts.Rate)
 	defer ticker.Stop()
@@ -134,7 +129,7 @@ func (p *Probe) Wait() {
 	p.wg.Wait()
 }
 
-func New(sender sender.Sender, opts probes.Opts, filters *probes.Filters) (*Probe, error) {
+func New(sender sender.Sender, opts probes.Opts) (*Probe, error) {
 	module, err := ebpf.LoadModule(probeAsset)
 	if err != nil {
 		return nil, err
@@ -150,9 +145,8 @@ func New(sender sender.Sender, opts probes.Opts, filters *probes.Filters) (*Prob
 	}
 
 	return &Probe{
-		module:  module,
-		sender:  sender,
-		opts:    opts,
-		filters: filters,
+		module: module,
+		sender: sender,
+		opts:   opts,
 	}, nil
 }

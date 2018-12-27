@@ -22,20 +22,23 @@
 
 package probes
 
-import "sync"
+import (
+	"sync"
+)
+
+const (
+	PIDFilter = iota + 1
+)
 
 type Filters struct {
 	sync.RWMutex
-	PIDs []int64
+	Flags int
+	PIDs  []int64
 }
 
 func (f *Filters) ContainsPID(pid int64) bool {
 	f.RLock()
 	defer f.RUnlock()
-
-	if len(f.PIDs) == 0 {
-		return true
-	}
 
 	for _, p := range f.PIDs {
 		if p == pid {
@@ -50,4 +53,12 @@ func (f *Filters) AddPIDs(pid ...int64) {
 	f.Lock()
 	f.PIDs = append(f.PIDs, pid...)
 	f.Unlock()
+}
+
+func (f *Filters) IsMatching(entry Entry) bool {
+	if (f.Flags & PIDFilter) > 0 {
+		return !f.ContainsPID(entry.GetPID())
+	}
+
+	return false
 }

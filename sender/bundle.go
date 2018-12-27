@@ -22,20 +22,28 @@
 
 package sender
 
+import "github.com/safchain/koa/probes"
+
 type Bundle struct {
 	senders []Sender
+	filters *probes.Filters
 }
 
-func (b *Bundle) Send(data interface{}) error {
+func (b *Bundle) Send(entry probes.Entry) error {
+	if b.filters.IsMatching(entry) {
+		return nil
+	}
+
 	for _, sender := range b.senders {
-		sender.Send(data)
+		sender.Send(entry)
 	}
 
 	return nil
 }
 
-func NewBundle(senders ...Sender) *Bundle {
+func NewBundle(filters *probes.Filters, senders ...Sender) *Bundle {
 	return &Bundle{
 		senders: senders,
+		filters: filters,
 	}
 }

@@ -25,14 +25,15 @@ package sender
 import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/safchain/koa/probes"
 )
 
 type Postgres struct {
 	db *gorm.DB
 }
 
-func (p *Postgres) Send(data interface{}) error {
-	p.db.Create(data)
+func (p *Postgres) Send(entry probes.Entry) error {
+	p.db.Create(entry)
 
 	return nil
 }

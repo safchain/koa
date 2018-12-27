@@ -25,17 +25,14 @@ package sender
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/safchain/koa/probes"
 )
 
 type Stdout struct{}
 
-func (s *Stdout) SendBytes(data []byte) error {
-
-	return nil
-}
-
-func (s *Stdout) Send(data interface{}) error {
-	b, err := json.Marshal(data)
+func (s *Stdout) Send(entry probes.Entry) error {
+	b, err := json.Marshal(entry)
 	if err != nil {
 		return err
 	}

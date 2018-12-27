@@ -22,8 +22,23 @@
 
 package sender
 
-import "github.com/safchain/koa/probes"
+import (
+	"encoding/json"
+	"fmt"
+	"os"
 
-type Sender interface {
-	Send(entry probes.Entry) error
+	"github.com/safchain/koa/probes"
+)
+
+type Stderr struct{}
+
+func (s *Stderr) Send(entry probes.Entry) error {
+	b, err := json.Marshal(entry)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintln(os.Stderr, string(b))
+
+	return nil
 }

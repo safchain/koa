@@ -20,10 +20,8 @@
  *
  */
 
-package sender
+package probes
 
-import "github.com/safchain/koa/probes"
-
-type Sender interface {
-	Send(entry probes.Entry) error
+type Entry interface {
+	GetPID() int64
 }

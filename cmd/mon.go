@@ -62,11 +62,11 @@ func exit(err error) {
 func NewProbe(id ProbeID, sender sender.Sender, opts probes.Opts, filters *probes.Filters) (probes.Probe, error) {
 	switch id {
 	case IOProbe:
-		return io.New(sender, opts, filters)
+		return io.New(sender, opts)
 	case CPUProbe:
-		return cpu.New(sender, opts, filters)
+		return cpu.New(sender, opts)
 	case MallocProbe:
-		return malloc.New(sender, opts, filters)
+		return malloc.New(sender, opts)
 	}
 
 	return nil, nil
@@ -99,7 +99,7 @@ func monitor(ctx context.Context, opts probes.Opts, filters *probes.Filters, wg 
 	if err != nil {
 		exit(err)
 	}*/
-	bundle := sender.NewBundle(stderr)
+	bundle := sender.NewBundle(filters, stderr)
 
 	const tag = "standard"
 	var tagNum int
@@ -151,7 +151,14 @@ var rootCmd = &cobra.Command{
 		}
 
 		filters := &probes.Filters{}
-		filters.AddPIDs(int64PIDs()...)
+
+		if len(pids) > 0 || len(args) > 0 {
+			filters.Flags |= probes.PIDFilter
+		}
+
+		if len(pids) > 0 {
+			filters.AddPIDs(int64PIDs()...)
+		}
 
 		ctx, cancel := context.WithCancel(context.Background())
 
@@ -165,6 +172,9 @@ var rootCmd = &cobra.Command{
 
 		wg.Add(1)
 		go monitor(ctx, opts, filters, &wg)
+
+		// wait just a bit to ensure that the probes are started
+		time.Sleep(time.Second)
 
 		if len(args) > 0 {
 			name := args[0]
