@@ -22,10 +22,32 @@
 
 package probes
 
-import (
-	"time"
-)
+import "sync"
 
-type Opts struct {
-	Rate time.Duration
+type Filters struct {
+	sync.RWMutex
+	PIDs []int64
+}
+
+func (f *Filters) ContainsPID(pid int64) bool {
+	f.RLock()
+	defer f.RUnlock()
+
+	if len(f.PIDs) == 0 {
+		return true
+	}
+
+	for _, p := range f.PIDs {
+		if p == pid {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (f *Filters) AddPIDs(pid ...int64) {
+	f.Lock()
+	f.PIDs = append(f.PIDs, pid...)
+	f.Unlock()
 }

@@ -3,6 +3,10 @@
 	"ignore": "",
 	"package": [
 		{
+			"path": "get",
+			"revision": ""
+		},
+		{
 			"checksumSHA1": "omM6LI0Xym1uotfmmNUfIQzRtZw=",
 			"path": "github.com/BurntSushi/toml",
 			"revision": "3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005",

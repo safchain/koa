@@ -42,11 +42,13 @@ import "C"
 
 type Probe struct {
 	sync.RWMutex
-	module *elf.Module
-	sender sender.Sender
-	opts   probes.Opts
-	runID  int64
-	tag    string
+	module  *elf.Module
+	sender  sender.Sender
+	opts    probes.Opts
+	filters *probes.Filters
+	runID   int64
+	tag     string
+	wg      sync.WaitGroup
 }
 
 const (
@@ -72,7 +74,42 @@ func (p *Probe) SetRunID(runID int64) {
 	p.Unlock()
 }
 
+func (p *Probe) read(cmap *elf.Map) {
+	var key, nextKey C.uint32_t
+	var value C.struct_value_t
+
+	for {
+		found, _ := p.module.LookupNextElement(cmap, unsafe.Pointer(&key), unsafe.Pointer(&nextKey), unsafe.Pointer(&value))
+		if !found {
+			break
+		}
+		key = nextKey
+
+		pid := int64(key)
+		if !p.filters.ContainsPID(pid) {
+			continue
+		}
+
+		p.RLock()
+		entry := &CPUEntry{
+			Type:        Type,
+			PID:         pid,
+			ProcessName: C.GoString(&value.name[0]),
+			Nanoseconds: int64(value.ns),
+			Timestamp:   time.Now().UTC().Unix(),
+			RunID:       p.runID,
+			Tag:         p.tag,
+		}
+		p.RUnlock()
+
+		p.sender.Send(entry)
+	}
+}
+
 func (p *Probe) run(ctx context.Context) {
+	p.wg.Add(1)
+	defer p.wg.Done()
+
 	cmap := p.module.Map("value_map")
 
 	ticker := time.NewTicker(p.opts.Rate)
@@ -81,37 +118,10 @@ func (p *Probe) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			p.read(cmap)
 			return
 		case <-ticker.C:
-			var key, nextKey C.uint32_t
-			var value C.struct_value_t
-
-			for {
-				found, _ := p.module.LookupNextElement(cmap, unsafe.Pointer(&key), unsafe.Pointer(&nextKey), unsafe.Pointer(&value))
-				if !found {
-					break
-				}
-				key = nextKey
-
-				pid := int64(key)
-				if !p.opts.ContainsPID(pid) {
-					continue
-				}
-
-				p.RLock()
-				entry := &CPUEntry{
-					Type:        Type,
-					PID:         pid,
-					ProcessName: C.GoString(&value.name[0]),
-					Nanoseconds: int64(value.ns),
-					Timestamp:   time.Now().UTC().Unix(),
-					RunID:       p.runID,
-					Tag:         p.tag,
-				}
-				p.RUnlock()
-
-				p.sender.Send(entry)
-			}
+			p.read(cmap)
 		}
 	}
 }
@@ -120,7 +130,11 @@ func (p *Probe) Start(ctx context.Context) {
 	go p.run(ctx)
 }
 
-func New(sender sender.Sender, opts probes.Opts) (*Probe, error) {
+func (p *Probe) Wait() {
+	p.wg.Wait()
+}
+
+func New(sender sender.Sender, opts probes.Opts, filters *probes.Filters) (*Probe, error) {
 	module, err := ebpf.LoadModule(probeAsset)
 	if err != nil {
 		return nil, err
@@ -136,8 +150,9 @@ func New(sender sender.Sender, opts probes.Opts) (*Probe, error) {
 	}
 
 	return &Probe{
-		module: module,
-		sender: sender,
-		opts:   opts,
+		module:  module,
+		sender:  sender,
+		opts:    opts,
+		filters: filters,
 	}, nil
 }

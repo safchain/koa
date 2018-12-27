@@ -30,4 +30,5 @@ type Probe interface {
 	Start(ctx context.Context)
 	SetRunID(runID int64)
 	SetTag(tag string)
+	Wait()
 }

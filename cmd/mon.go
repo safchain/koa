@@ -26,8 +26,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/safchain/koa/probes"
@@ -36,6 +39,7 @@ import (
 	"github.com/safchain/koa/probes/malloc"
 	"github.com/safchain/koa/sender"
 	"github.com/spf13/cobra"
+	"golang.org/x/sys/unix"
 )
 
 var (
@@ -51,18 +55,18 @@ const (
 )
 
 func exit(err error) {
-	fmt.Fprintf(os.Stderr, "Unable to create probe: %s\n", err)
+	fmt.Fprintln(os.Stderr, err)
 	os.Exit(1)
 }
 
-func NewProbe(id ProbeID, sender sender.Sender, opts probes.Opts) (probes.Probe, error) {
+func NewProbe(id ProbeID, sender sender.Sender, opts probes.Opts, filters *probes.Filters) (probes.Probe, error) {
 	switch id {
 	case IOProbe:
-		return io.New(sender, opts)
+		return io.New(sender, opts, filters)
 	case CPUProbe:
-		return cpu.New(sender, opts)
+		return cpu.New(sender, opts, filters)
 	case MallocProbe:
-		return malloc.New(sender, opts)
+		return malloc.New(sender, opts, filters)
 	}
 
 	return nil, nil
@@ -72,14 +76,69 @@ func int64PIDs() []int64 {
 	var p []int64
 
 	for _, s := range pids {
-		i, err := strconv.ParseInt(s, 10, 64)
+		pid, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
-			exit(fmt.Errorf("PID %s not valid", s))
+			exit(fmt.Errorf("PID %s not valid: %s", s, err))
 		}
-		p = append(p, i)
+
+		if _, err = os.FindProcess(int(pid)); err != nil {
+			exit(fmt.Errorf("PID %s not valid: %s", s, err))
+		}
+
+		p = append(p, pid)
 	}
 
 	return p
+}
+
+func monitor(ctx context.Context, opts probes.Opts, filters *probes.Filters, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	stderr := &sender.Stderr{}
+	/*sql, err := sender.NewPostgres(&io.IOEntry{}, &cpu.CPUEntry{}, &malloc.MallocEntry{})
+	if err != nil {
+		exit(err)
+	}*/
+	bundle := sender.NewBundle(stderr)
+
+	const tag = "standard"
+	var tagNum int
+
+	var all []probes.Probe
+	for _, id := range []ProbeID{CPUProbe, IOProbe, MallocProbe} {
+		probe, err := NewProbe(id, bundle, opts, filters)
+		if err != nil {
+			exit(err)
+		}
+		probe.SetRunID(int64(os.Getpid()))
+		probe.SetTag(fmt.Sprintf("%s/%d", tag, tagNum))
+
+		all = append(all, probe)
+	}
+
+	for _, probe := range all {
+		probe.Start(ctx)
+	}
+
+	usr1 := make(chan os.Signal, 1)
+	signal.Notify(usr1, syscall.SIGUSR1)
+
+LOOP:
+	for {
+		select {
+		case <-ctx.Done():
+			break LOOP
+		case <-usr1:
+			tagNum++
+			for _, probe := range all {
+				probe.SetTag(fmt.Sprintf("%s/%d", tag, tagNum))
+			}
+		}
+	}
+
+	for _, probe := range all {
+		probe.Wait()
+	}
 }
 
 var rootCmd = &cobra.Command{
@@ -87,41 +146,65 @@ var rootCmd = &cobra.Command{
 	Short: "Monitoring tools...",
 	Long:  `Monitoring tools...`,
 	Run: func(cmd *cobra.Command, args []string) {
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-
-		stdout := &sender.Stdout{}
-		sql, err := sender.NewPostgres(&io.IOEntry{}, &cpu.CPUEntry{}, &malloc.MallocEntry{})
-		if err != nil {
-			exit(err)
+		opts := probes.Opts{
+			Rate: 2 * time.Second,
 		}
-		bundle := sender.NewBundle(stdout, sql)
+
+		filters := &probes.Filters{}
+		filters.AddPIDs(int64PIDs()...)
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		opts := probes.Opts{
-			Rate: 2 * time.Second,
-			PIDs: int64PIDs(),
-		}
+		interrupt := make(chan os.Signal, 1)
+		signal.Notify(interrupt, os.Interrupt)
 
-		var all []probes.Probe
-		for _, id := range []ProbeID{CPUProbe, IOProbe, MallocProbe} {
-			probe, err := NewProbe(id, bundle, opts)
+		child := make(chan os.Signal, 1)
+		signal.Notify(child, unix.SIGCHLD)
+
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+		go monitor(ctx, opts, filters, &wg)
+
+		if len(args) > 0 {
+			name := args[0]
+
+			path, err := exec.LookPath(name)
 			if err != nil {
 				exit(err)
 			}
-			probe.SetRunID(int64(os.Getpid()))
-			probe.SetTag("standard")
 
-			all = append(all, probe)
+			cmd := exec.Command(path, args[1:]...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+
+			if err = cmd.Start(); err != nil {
+				exit(err)
+			}
+
+			filters.AddPIDs(int64(cmd.Process.Pid))
 		}
 
-		for _, probe := range all {
-			probe.Start(ctx)
-		}
+	LOOP:
+		for {
+			select {
+			case <-interrupt:
+				cancel()
+				break LOOP
+			case <-child:
+				var status unix.WaitStatus
+				_, err := unix.Wait4(-1, &status, unix.WNOHANG, nil)
+				if err != nil {
+					exit(err)
+				}
 
-		<-c
-		cancel()
+				if len(pids) == 0 {
+					cancel()
+					break LOOP
+				}
+			}
+		}
+		wg.Wait()
 	},
 }
 

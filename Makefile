@@ -22,8 +22,13 @@ build-ebpf-object:
 	sudo chown -R $(UID):$(UID) ebpf
 
 .PHONY: mon
-mon:
+mon: proto
 	go build -ldflags="-s -w" cmd/mon.go
+
+proto: probes/malloc/malloc.pb.go probes/io/io.pb.go probes/cpu/cpu.pb.go
+	protoc --go_out=.  probes/malloc/malloc.proto
+	protoc --go_out=.  probes/io/io.proto
+	protoc --go_out=.  probes/cpu/cpu.proto
 
 delete-docker-image:
 	$(SUDO) docker rmi -f $(DOCKER_IMAGE)
