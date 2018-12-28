@@ -37,6 +37,7 @@ import (
 	"github.com/safchain/koa/probes/cpu"
 	"github.com/safchain/koa/probes/io"
 	"github.com/safchain/koa/probes/malloc"
+	"github.com/safchain/koa/probes/vfs"
 	"github.com/safchain/koa/sender"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
@@ -44,6 +45,12 @@ import (
 
 var (
 	pids []string
+
+	allProbes   bool
+	cpuProbe    bool
+	mallocProbe bool
+	ioProbe     bool
+	vfsProbe    bool
 )
 
 type ProbeID int
@@ -52,6 +59,7 @@ const (
 	IOProbe ProbeID = iota + 1
 	CPUProbe
 	MallocProbe
+	VFSProbe
 )
 
 func exit(err error) {
@@ -67,6 +75,8 @@ func NewProbe(id ProbeID, sender sender.Sender, opts probes.Opts, filters *probe
 		return cpu.New(sender, opts)
 	case MallocProbe:
 		return malloc.New(sender, opts)
+	case VFSProbe:
+		return vfs.New(sender, opts)
 	}
 
 	return nil, nil
@@ -91,6 +101,24 @@ func int64PIDs() []int64 {
 	return p
 }
 
+func enabledProbes() []ProbeID {
+	var enabledProbes []ProbeID
+	if cpuProbe || allProbes {
+		enabledProbes = append(enabledProbes, CPUProbe)
+	}
+	if mallocProbe || allProbes {
+		enabledProbes = append(enabledProbes, MallocProbe)
+	}
+	if ioProbe || allProbes {
+		enabledProbes = append(enabledProbes, IOProbe)
+	}
+	if vfsProbe || allProbes {
+		enabledProbes = append(enabledProbes, VFSProbe)
+	}
+
+	return enabledProbes
+}
+
 func monitor(ctx context.Context, opts probes.Opts, filters *probes.Filters, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -104,8 +132,8 @@ func monitor(ctx context.Context, opts probes.Opts, filters *probes.Filters, wg 
 	const tag = "standard"
 	var tagNum int
 
-	var all []probes.Probe
-	for _, id := range []ProbeID{CPUProbe, IOProbe, MallocProbe} {
+	var activated []probes.Probe
+	for _, id := range enabledProbes() {
 		probe, err := NewProbe(id, bundle, opts, filters)
 		if err != nil {
 			exit(err)
@@ -113,10 +141,10 @@ func monitor(ctx context.Context, opts probes.Opts, filters *probes.Filters, wg 
 		probe.SetRunID(int64(os.Getpid()))
 		probe.SetTag(fmt.Sprintf("%s/%d", tag, tagNum))
 
-		all = append(all, probe)
+		activated = append(activated, probe)
 	}
 
-	for _, probe := range all {
+	for _, probe := range activated {
 		probe.Start(ctx)
 	}
 
@@ -130,13 +158,13 @@ LOOP:
 			break LOOP
 		case <-usr1:
 			tagNum++
-			for _, probe := range all {
+			for _, probe := range activated {
 				probe.SetTag(fmt.Sprintf("%s/%d", tag, tagNum))
 			}
 		}
 	}
 
-	for _, probe := range all {
+	for _, probe := range activated {
 		probe.Wait()
 	}
 }
@@ -220,6 +248,13 @@ var rootCmd = &cobra.Command{
 
 func main() {
 	rootCmd.PersistentFlags().StringArrayVarP(&pids, "pid", "p", []string{}, "capture specified pid")
+
+	rootCmd.PersistentFlags().BoolVarP(&allProbes, "all", "a", false, "enable all probes")
+	rootCmd.PersistentFlags().BoolVarP(&cpuProbe, "cpu", "c", false, "enable cpu probe")
+	rootCmd.PersistentFlags().BoolVarP(&ioProbe, "io", "i", false, "enable io probe")
+	rootCmd.PersistentFlags().BoolVarP(&mallocProbe, "malloc", "m", false, "enable malloc probe")
+	rootCmd.PersistentFlags().BoolVarP(&vfsProbe, "vfs", "v", false, "enable vfs probe")
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

@@ -103,15 +103,17 @@ int kprobe__blk_account_io_completion(struct pt_regs *ctx)
 	bpf_probe_read(&key.major, sizeof(key.major), (void *)&(gendisk->major));
 	bpf_probe_read(&key.minor, sizeof(key.minor), (void *)&(gendisk->first_minor));
 
-	u32 rwflag = 0;
-	bpf_probe_read(&rwflag, sizeof(rwflag), &req->cmd_flags);
+	u32 flags = 0;
+	bpf_probe_read(&flags, sizeof(flags), &req->cmd_flags);
+
+	bool write = false;
 
 #ifdef REQ_WRITE
-	key.rwflag = !!(rwflag & REQ_WRITE);
+	write = !!(flags & REQ_WRITE);
 #elif defined(REQ_OP_SHIFT)
-	key.rwflag = !!((rwflag >> REQ_OP_SHIFT) == REQ_OP_WRITE);
+	write = !!((flags >> REQ_OP_SHIFT) == REQ_OP_WRITE);
 #else
-	key.rwflag = !!((rwflag & REQ_OP_MASK) == REQ_OP_WRITE);
+	write = !!((flags & REQ_OP_MASK) == REQ_OP_WRITE);
 #endif
 
 	struct process_t *process = bpf_map_lookup_elem(&process_map, &req);
@@ -129,8 +131,14 @@ int kprobe__blk_account_io_completion(struct pt_regs *ctx)
 		bpf_map_update_elem(&value_map, &key, &zero, BPF_ANY);
 		value = &zero;
 	}
-	value->bytes += len;
-	value->io++;
+
+	if (write) {
+		value->wbytes += len;
+		value->wio++;
+	} else {
+		value->rbytes += len;
+		value->rio++;
+	}
 
 	return 0;
 }

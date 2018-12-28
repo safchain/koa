@@ -25,10 +25,19 @@ build-ebpf-object:
 mon: proto
 	go build -ldflags="-s -w" cmd/mon.go
 
-proto: probes/malloc/malloc.pb.go probes/io/io.pb.go probes/cpu/cpu.pb.go
+probes/malloc/malloc.pb.go:
 	protoc --go_out=.  probes/malloc/malloc.proto
+
+probes/io/io.pb.go:
 	protoc --go_out=.  probes/io/io.proto
+
+probes/cpu/cpu.pb.go:
 	protoc --go_out=.  probes/cpu/cpu.proto
+
+probes/vfs/vfs.pb.go:
+	protoc --go_out=.  probes/vfs/vfs.proto
+
+proto: probes/malloc/malloc.pb.go probes/io/io.pb.go probes/cpu/cpu.pb.go probes/vfs/vfs.pb.go
 
 delete-docker-image:
 	$(SUDO) docker rmi -f $(DOCKER_IMAGE)

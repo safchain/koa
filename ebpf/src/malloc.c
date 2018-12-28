@@ -34,16 +34,11 @@ int uprobe__malloc(struct pt_regs *ctx)
     struct value_t *value = bpf_map_lookup_elem(&value_map, &pid);
     if (value == NULL)
     {
-        zero.bytes = size;
         bpf_get_current_comm(&zero.name, sizeof(zero.name));
-
         bpf_map_update_elem(&value_map, &pid, &zero, BPF_ANY);
         value = &zero;
     }
-    else
-    {
-        value->bytes += size;
-    }
+    value->bytes += size;
 
     return 0;
 }

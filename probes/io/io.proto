@@ -29,10 +29,11 @@ message IOEntry {
     int64 PID = 2;
     string ProcessName = 4;
     string Device = 5;
-    int64 Flag = 6;
-    int64 IO = 7;
-    int64 Bytes = 8;
-    int64 Timestamp = 9;
+    int64 RIO = 7;
+    int64 RBytes = 8;
+    int64 WIO = 9;
+    int64 WBytes = 10;
+    int64 Timestamp = 11;
 
     int64 RunID = 100;
     string Tag = 101;
