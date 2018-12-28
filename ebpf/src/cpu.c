@@ -17,7 +17,7 @@ struct bpf_map_def SEC("maps/start_map") start_map = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(u32),
     .value_size = sizeof(u64),
-    .max_entries = 1024,
+    .max_entries = 65535,
     .pinning = 0,
     .namespace = "",
 };
@@ -26,7 +26,7 @@ struct bpf_map_def SEC("maps/value_map") value_map = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(u32),
     .value_size = sizeof(struct value_t),
-    .max_entries = 1024,
+    .max_entries = 65535,
     .pinning = 0,
     .namespace = "",
 };
@@ -37,20 +37,17 @@ int kprobe__finish_task_switch(struct pt_regs *ctx)
     struct task_struct *prev = (void *)ctx->di;
 
     u64 ts = bpf_ktime_get_ns();
-    u64 pid_tgid = bpf_get_current_pid_tgid();
-    u32 pid = pid_tgid;
+    u64 pid = bpf_get_current_pid_tgid();
 
     u32 state = 0;
     bpf_probe_read(&state, sizeof(state), (void *)&prev->state);
     if (state == TASK_RUNNING)
     {
         u32 prev_pid = 0;
-        u32 prev_tgid = 0;
 
         bpf_probe_read(&prev_pid, sizeof(prev_pid), (void *)&prev->pid);
-        bpf_probe_read(&prev_tgid, sizeof(prev_tgid), (void *)&prev->tgid);
 
-        u64 *tsp = bpf_map_lookup_elem(&start_map, &pid);
+        u64 *tsp = bpf_map_lookup_elem(&start_map, &prev_pid);
         if (tsp == 0 || ts < *tsp)
         {
             return 0;
