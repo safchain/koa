@@ -13,7 +13,6 @@ struct key_t
     __u32 pid;
     int major;
     int minor;
-    char name[TASK_COMM_LEN];
 };
 
 // the value of the output summary
@@ -23,6 +22,7 @@ struct value_t
     __u64 rio;
     __u64 wbytes;
     __u64 wio;
+    char name[TASK_COMM_LEN];
 };
 
 #endif

@@ -120,8 +120,6 @@ int kprobe__blk_account_io_completion(struct pt_regs *ctx)
 	if (process != NULL)
 	{
 		key.pid = process->pid;
-		// TODO move this into the value
-		__builtin_memcpy(&key.name, process->name, sizeof(key.name));
 	}
 
 	struct value_t *value, zero = {};
@@ -129,6 +127,11 @@ int kprobe__blk_account_io_completion(struct pt_regs *ctx)
 	value = bpf_map_lookup_elem(&value_map, &key);
 	if (value == NULL)
 	{
+		if (process != NULL)
+		{
+			__builtin_memcpy(&zero.name, process->name, sizeof(zero.name));
+		}
+		
 		bpf_map_update_elem(&value_map, &key, &zero, BPF_ANY);
 		value = &zero;
 	}

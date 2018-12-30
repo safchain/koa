@@ -91,7 +91,7 @@ func (p *Probe) read(cmap *elf.Map) {
 		entry := &IOEntry{
 			Type:        Type,
 			PID:         int64(key.pid),
-			ProcessName: C.GoString(&key.name[0]),
+			ProcessName: C.GoString(&value.name[0]),
 			Device:      "",
 			RIO:         int64(value.rio),
 			RBytes:      int64(value.rbytes),
