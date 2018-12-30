@@ -236,7 +236,7 @@ var rootCmd = &cobra.Command{
 		ctx, cancel := context.WithCancel(context.Background())
 		monitor.Start(ctx)
 
-		// fnction latency specific
+		// function latency specific
 		fncProbe := monitor.Probe(fnc.Type)
 		if fncProbe != nil {
 			for _, pid := range pids {
@@ -303,7 +303,7 @@ func main() {
 	rootCmd.PersistentFlags().BoolVarP(&ioProbeArg, "io", "i", false, "enable io probe")
 	rootCmd.PersistentFlags().BoolVarP(&mallocProbeArg, "malloc", "m", false, "enable malloc probe")
 	rootCmd.PersistentFlags().BoolVarP(&vfsProbeArg, "vfs", "v", false, "enable vfs probe")
-	rootCmd.PersistentFlags().BoolVarP(&fncProbeArg, "fnc", "f", false, "enable fnction latency probe")
+	rootCmd.PersistentFlags().BoolVarP(&fncProbeArg, "fnc", "f", false, "enable function probe")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
