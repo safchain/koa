@@ -35,7 +35,7 @@ import (
 
 	"github.com/safchain/koa/probes"
 	"github.com/safchain/koa/probes/cpu"
-	"github.com/safchain/koa/probes/funclat"
+	"github.com/safchain/koa/probes/fnc"
 	"github.com/safchain/koa/probes/io"
 	"github.com/safchain/koa/probes/malloc"
 	"github.com/safchain/koa/probes/vfs"
@@ -45,13 +45,13 @@ import (
 )
 
 var (
-	pidArgs         []string
-	allProbesArg    bool
-	cpuProbeArg     bool
-	mallocProbeArg  bool
-	ioProbeArg      bool
-	vfsProbeArg     bool
-	funcLatProbeArg bool
+	pidArgs        []string
+	allProbesArg   bool
+	cpuProbeArg    bool
+	mallocProbeArg bool
+	ioProbeArg     bool
+	vfsProbeArg    bool
+	fncProbeArg    bool
 )
 
 type Monitor struct {
@@ -80,8 +80,8 @@ func (m *Monitor) AddProbe(typ string) error {
 		probe, err = malloc.New(m.Sender, m.Opts)
 	case vfs.Type:
 		probe, err = vfs.New(m.Sender, m.Opts)
-	case funclat.Type:
-		probe, err = funclat.New(m.Sender, m.Opts)
+	case fnc.Type:
+		probe, err = fnc.New(m.Sender, m.Opts)
 	}
 
 	if err != nil {
@@ -190,8 +190,8 @@ func enabledProbeTypes() []string {
 	if vfsProbeArg || allProbesArg {
 		types = append(types, vfs.Type)
 	}
-	if funcLatProbeArg || allProbesArg {
-		types = append(types, funclat.Type)
+	if fncProbeArg || allProbesArg {
+		types = append(types, fnc.Type)
 	}
 
 	return types
@@ -236,11 +236,11 @@ var rootCmd = &cobra.Command{
 		ctx, cancel := context.WithCancel(context.Background())
 		monitor.Start(ctx)
 
-		// function latency specific
-		funcLatProbe := monitor.Probe(funclat.Type)
-		if funcLatProbe != nil {
+		// fnction latency specific
+		fncProbe := monitor.Probe(fnc.Type)
+		if fncProbe != nil {
 			for _, pid := range pids {
-				funcLatProbe.(*funclat.Probe).AddPID(pid)
+				fncProbe.(*fnc.Probe).AddPID(pid)
 			}
 		}
 
@@ -267,8 +267,8 @@ var rootCmd = &cobra.Command{
 
 			filters.AddPIDs(pid)
 
-			if funcLatProbe != nil {
-				funcLatProbe.(*funclat.Probe).AddPID(pid)
+			if fncProbe != nil {
+				fncProbe.(*fnc.Probe).AddPID(pid)
 			}
 		}
 
@@ -303,7 +303,7 @@ func main() {
 	rootCmd.PersistentFlags().BoolVarP(&ioProbeArg, "io", "i", false, "enable io probe")
 	rootCmd.PersistentFlags().BoolVarP(&mallocProbeArg, "malloc", "m", false, "enable malloc probe")
 	rootCmd.PersistentFlags().BoolVarP(&vfsProbeArg, "vfs", "v", false, "enable vfs probe")
-	rootCmd.PersistentFlags().BoolVarP(&funcLatProbeArg, "funclat", "f", false, "enable function latency probe")
+	rootCmd.PersistentFlags().BoolVarP(&fncProbeArg, "fnc", "f", false, "enable fnction latency probe")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

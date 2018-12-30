@@ -37,10 +37,10 @@ probes/cpu/cpu.pb.go: probes/cpu/cpu.proto
 probes/vfs/vfs.pb.go: probes/vfs/vfs.proto
 	protoc --go_out=. probes/vfs/vfs.proto
 
-probes/funclat/funclat.pb.go: probes/funclat/funclat.proto
-	protoc --go_out=. probes/funclat/funclat.proto
+probes/fnc/fnc.pb.go: probes/fnc/fnc.proto
+	protoc --go_out=. probes/fnc/fnc.proto
 
-proto: probes/malloc/malloc.pb.go probes/io/io.pb.go probes/cpu/cpu.pb.go probes/vfs/vfs.pb.go probes/funclat/funclat.pb.go
+proto: probes/malloc/malloc.pb.go probes/io/io.pb.go probes/cpu/cpu.pb.go probes/vfs/vfs.pb.go probes/fnc/fnc.pb.go
 
 delete-docker-image:
 	$(SUDO) docker rmi -f $(DOCKER_IMAGE)

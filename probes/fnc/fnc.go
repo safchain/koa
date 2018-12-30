@@ -20,7 +20,7 @@
  *
  */
 
-package funclat
+package fnc
 
 import (
 	"context"
@@ -40,7 +40,7 @@ import (
 
 // #cgo CFLAGS: -I../../ebpf/include
 // #include <stdint.h>
-// #include "funclat.h"
+// #include "fnc.h"
 import "C"
 
 type Probe struct {
@@ -55,14 +55,14 @@ type Probe struct {
 }
 
 const (
-	Type       = "funclat"
-	probeAsset = "funclat.o"
+	Type       = "fnc"
+	probeAsset = "fnc.o"
 )
 
 var (
 	uprobes = []string{
 		"uprobe/entry",
-		"uprobe/return",
+		"uretprobe/return",
 	}
 )
 
@@ -130,7 +130,7 @@ func (p *Probe) read(cmap *ebpelf.Map) {
 		p.RUnlock()
 
 		p.RLock()
-		entry := &FuncLatEntry{
+		entry := &FncEntry{
 			Type:        Type,
 			PID:         int64(key.pid),
 			ProcessName: C.GoString(&value.name[0]),

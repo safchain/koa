@@ -66,6 +66,7 @@ __attribute__((always_inline)) static inline int trace_req_start(struct pt_regs 
 
 	u64 ts = bpf_ktime_get_ns();
 	bpf_map_update_elem(&start_map, &req, &ts, BPF_ANY);
+	
 	return 0;
 }
 
@@ -131,7 +132,7 @@ int kprobe__blk_account_io_completion(struct pt_regs *ctx)
 		{
 			__builtin_memcpy(&zero.name, process->name, sizeof(zero.name));
 		}
-		
+
 		bpf_map_update_elem(&value_map, &key, &zero, BPF_ANY);
 		value = &zero;
 	}
