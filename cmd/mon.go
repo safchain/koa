@@ -35,6 +35,7 @@ import (
 
 	"github.com/safchain/koa/probes"
 	"github.com/safchain/koa/probes/cpu"
+	"github.com/safchain/koa/probes/funclat"
 	"github.com/safchain/koa/probes/io"
 	"github.com/safchain/koa/probes/malloc"
 	"github.com/safchain/koa/probes/vfs"
@@ -44,48 +45,122 @@ import (
 )
 
 var (
-	pids []string
-
-	allProbes   bool
-	cpuProbe    bool
-	mallocProbe bool
-	ioProbe     bool
-	vfsProbe    bool
+	pidArgs         []string
+	allProbesArg    bool
+	cpuProbeArg     bool
+	mallocProbeArg  bool
+	ioProbeArg      bool
+	vfsProbeArg     bool
+	funcLatProbeArg bool
 )
 
-type ProbeID int
-
-const (
-	IOProbe ProbeID = iota + 1
-	CPUProbe
-	MallocProbe
-	VFSProbe
-)
+type Monitor struct {
+	sync.RWMutex
+	Sender sender.Sender
+	Opts   probes.Opts
+	probes map[string]probes.Probe
+	wg     sync.WaitGroup
+}
 
 func exit(err error) {
 	fmt.Fprintln(os.Stderr, err)
 	os.Exit(1)
 }
 
-func NewProbe(id ProbeID, sender sender.Sender, opts probes.Opts, filters *probes.Filters) (probes.Probe, error) {
-	switch id {
-	case IOProbe:
-		return io.New(sender, opts)
-	case CPUProbe:
-		return cpu.New(sender, opts)
-	case MallocProbe:
-		return malloc.New(sender, opts)
-	case VFSProbe:
-		return vfs.New(sender, opts)
+func (m *Monitor) AddProbe(typ string) error {
+	var probe probes.Probe
+	var err error
+
+	switch typ {
+	case io.Type:
+		probe, err = io.New(m.Sender, m.Opts)
+	case cpu.Type:
+		probe, err = cpu.New(m.Sender, m.Opts)
+	case malloc.Type:
+		probe, err = malloc.New(m.Sender, m.Opts)
+	case vfs.Type:
+		probe, err = vfs.New(m.Sender, m.Opts)
+	case funclat.Type:
+		probe, err = funclat.New(m.Sender, m.Opts)
 	}
 
-	return nil, nil
+	if err != nil {
+		return err
+	}
+
+	probe.SetRunID(int64(os.Getpid()))
+	probe.SetTag("default")
+
+	m.Lock()
+	m.probes[typ] = probe
+	m.Unlock()
+
+	return nil
 }
 
-func int64PIDs() []int64 {
+func (m *Monitor) Run(ctx context.Context) error {
+	m.wg.Add(1)
+	defer m.wg.Done()
+
+	m.RLock()
+	for _, probe := range m.probes {
+		probe.Start(ctx)
+	}
+	m.RUnlock()
+
+	usr1 := make(chan os.Signal, 1)
+	signal.Notify(usr1, syscall.SIGUSR1)
+
+	var tag int
+LOOP:
+	for {
+		select {
+		case <-ctx.Done():
+			break LOOP
+		case <-usr1:
+			tag++
+
+			m.RLock()
+			for _, probe := range m.probes {
+				probe.SetTag(fmt.Sprintf("usr1/%d", tag))
+			}
+			m.RUnlock()
+		}
+	}
+
+	m.RLock()
+	for _, probe := range m.probes {
+		probe.Wait()
+	}
+	m.RUnlock()
+
+	return nil
+}
+
+func (m *Monitor) Start(ctx context.Context) {
+	go func() {
+		if err := m.Run(ctx); err != nil {
+			exit(err)
+		}
+	}()
+}
+
+func (m *Monitor) Probe(typ string) probes.Probe {
+	m.RLock()
+	p := m.probes[typ]
+	m.RUnlock()
+
+	return p
+}
+
+func (m *Monitor) Wait() {
+	m.wg.Wait()
+}
+
+func PIDs() []int64 {
 	var p []int64
 
-	for _, s := range pids {
+	for _, s := range pidArgs {
 		pid, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
 			exit(fmt.Errorf("PID %s not valid: %s", s, err))
@@ -101,72 +176,25 @@ func int64PIDs() []int64 {
 	return p
 }
 
-func enabledProbes() []ProbeID {
-	var enabledProbes []ProbeID
-	if cpuProbe || allProbes {
-		enabledProbes = append(enabledProbes, CPUProbe)
+func enabledProbeTypes() []string {
+	var types []string
+	if cpuProbeArg || allProbesArg {
+		types = append(types, cpu.Type)
 	}
-	if mallocProbe || allProbes {
-		enabledProbes = append(enabledProbes, MallocProbe)
+	if mallocProbeArg || allProbesArg {
+		types = append(types, malloc.Type)
 	}
-	if ioProbe || allProbes {
-		enabledProbes = append(enabledProbes, IOProbe)
+	if ioProbeArg || allProbesArg {
+		types = append(types, io.Type)
 	}
-	if vfsProbe || allProbes {
-		enabledProbes = append(enabledProbes, VFSProbe)
+	if vfsProbeArg || allProbesArg {
+		types = append(types, vfs.Type)
 	}
-
-	return enabledProbes
-}
-
-func monitor(ctx context.Context, opts probes.Opts, filters *probes.Filters, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	stderr := &sender.Stderr{}
-	/*sql, err := sender.NewPostgres(&io.IOEntry{}, &cpu.CPUEntry{}, &malloc.MallocEntry{})
-	if err != nil {
-		exit(err)
-	}*/
-	bundle := sender.NewBundle(filters, stderr)
-
-	const tag = "standard"
-	var tagNum int
-
-	var activated []probes.Probe
-	for _, id := range enabledProbes() {
-		probe, err := NewProbe(id, bundle, opts, filters)
-		if err != nil {
-			exit(err)
-		}
-		probe.SetRunID(int64(os.Getpid()))
-		probe.SetTag(fmt.Sprintf("%s/%d", tag, tagNum))
-
-		activated = append(activated, probe)
+	if funcLatProbeArg || allProbesArg {
+		types = append(types, funclat.Type)
 	}
 
-	for _, probe := range activated {
-		probe.Start(ctx)
-	}
-
-	usr1 := make(chan os.Signal, 1)
-	signal.Notify(usr1, syscall.SIGUSR1)
-
-LOOP:
-	for {
-		select {
-		case <-ctx.Done():
-			break LOOP
-		case <-usr1:
-			tagNum++
-			for _, probe := range activated {
-				probe.SetTag(fmt.Sprintf("%s/%d", tag, tagNum))
-			}
-		}
-	}
-
-	for _, probe := range activated {
-		probe.Wait()
-	}
+	return types
 }
 
 var rootCmd = &cobra.Command{
@@ -174,21 +202,16 @@ var rootCmd = &cobra.Command{
 	Short: "Monitoring tools...",
 	Long:  `Monitoring tools...`,
 	Run: func(cmd *cobra.Command, args []string) {
-		opts := probes.Opts{
-			Rate: 2 * time.Second,
-		}
-
 		filters := &probes.Filters{}
 
-		if len(pids) > 0 || len(args) > 0 {
+		if len(pidArgs) > 0 || len(args) > 0 {
 			filters.Flags |= probes.PIDFilter
 		}
 
+		pids := PIDs()
 		if len(pids) > 0 {
-			filters.AddPIDs(int64PIDs()...)
+			filters.AddPIDs(pids...)
 		}
-
-		ctx, cancel := context.WithCancel(context.Background())
 
 		interrupt := make(chan os.Signal, 1)
 		signal.Notify(interrupt, os.Interrupt)
@@ -196,10 +219,30 @@ var rootCmd = &cobra.Command{
 		child := make(chan os.Signal, 1)
 		signal.Notify(child, unix.SIGCHLD)
 
-		var wg sync.WaitGroup
+		monitor := &Monitor{
+			Opts: probes.Opts{
+				Rate: 2 * time.Second,
+			},
+			Sender: sender.NewBundle(filters, &sender.Stderr{}),
+			probes: make(map[string]probes.Probe),
+		}
 
-		wg.Add(1)
-		go monitor(ctx, opts, filters, &wg)
+		for _, typ := range enabledProbeTypes() {
+			if err := monitor.AddProbe(typ); err != nil {
+				exit(err)
+			}
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		monitor.Start(ctx)
+
+		// function latency specific
+		funcLatProbe := monitor.Probe(funclat.Type)
+		if funcLatProbe != nil {
+			for _, pid := range pids {
+				funcLatProbe.(*funclat.Probe).AddPID(pid)
+			}
+		}
 
 		// wait just a bit to ensure that the probes are started
 		time.Sleep(time.Second)
@@ -220,7 +263,13 @@ var rootCmd = &cobra.Command{
 				exit(err)
 			}
 
-			filters.AddPIDs(int64(cmd.Process.Pid))
+			pid := int64(cmd.Process.Pid)
+
+			filters.AddPIDs(pid)
+
+			if funcLatProbe != nil {
+				funcLatProbe.(*funclat.Probe).AddPID(pid)
+			}
 		}
 
 	LOOP:
@@ -236,24 +285,25 @@ var rootCmd = &cobra.Command{
 					exit(err)
 				}
 
-				if len(pids) == 0 {
+				if len(pidArgs) == 0 {
 					cancel()
 					break LOOP
 				}
 			}
 		}
-		wg.Wait()
+		monitor.Wait()
 	},
 }
 
 func main() {
-	rootCmd.PersistentFlags().StringArrayVarP(&pids, "pid", "p", []string{}, "capture specified pid")
+	rootCmd.PersistentFlags().StringArrayVarP(&pidArgs, "pid", "p", []string{}, "capture specified pid")
 
-	rootCmd.PersistentFlags().BoolVarP(&allProbes, "all", "a", false, "enable all probes")
-	rootCmd.PersistentFlags().BoolVarP(&cpuProbe, "cpu", "c", false, "enable cpu probe")
-	rootCmd.PersistentFlags().BoolVarP(&ioProbe, "io", "i", false, "enable io probe")
-	rootCmd.PersistentFlags().BoolVarP(&mallocProbe, "malloc", "m", false, "enable malloc probe")
-	rootCmd.PersistentFlags().BoolVarP(&vfsProbe, "vfs", "v", false, "enable vfs probe")
+	rootCmd.PersistentFlags().BoolVarP(&allProbesArg, "all", "a", false, "enable all probes")
+	rootCmd.PersistentFlags().BoolVarP(&cpuProbeArg, "cpu", "c", false, "enable cpu probe")
+	rootCmd.PersistentFlags().BoolVarP(&ioProbeArg, "io", "i", false, "enable io probe")
+	rootCmd.PersistentFlags().BoolVarP(&mallocProbeArg, "malloc", "m", false, "enable malloc probe")
+	rootCmd.PersistentFlags().BoolVarP(&vfsProbeArg, "vfs", "v", false, "enable vfs probe")
+	rootCmd.PersistentFlags().BoolVarP(&funcLatProbeArg, "funclat", "f", false, "enable function latency probe")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

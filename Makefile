@@ -25,19 +25,22 @@ build-ebpf-object:
 mon: proto
 	go build -ldflags="-s -w" cmd/mon.go
 
-probes/malloc/malloc.pb.go:
-	protoc --go_out=.  probes/malloc/malloc.proto
+probes/malloc/malloc.pb.go: probes/malloc/malloc.proto
+	protoc --go_out=. probes/malloc/malloc.proto
 
-probes/io/io.pb.go:
-	protoc --go_out=.  probes/io/io.proto
+probes/io/io.pb.go: probes/io/io.proto
+	protoc --go_out=. probes/io/io.proto
 
-probes/cpu/cpu.pb.go:
-	protoc --go_out=.  probes/cpu/cpu.proto
+probes/cpu/cpu.pb.go: probes/cpu/cpu.proto
+	protoc --go_out=. probes/cpu/cpu.proto
 
-probes/vfs/vfs.pb.go:
-	protoc --go_out=.  probes/vfs/vfs.proto
+probes/vfs/vfs.pb.go: probes/vfs/vfs.proto
+	protoc --go_out=. probes/vfs/vfs.proto
 
-proto: probes/malloc/malloc.pb.go probes/io/io.pb.go probes/cpu/cpu.pb.go probes/vfs/vfs.pb.go
+probes/funclat/funclat.pb.go: probes/funclat/funclat.proto
+	protoc --go_out=. probes/funclat/funclat.proto
+
+proto: probes/malloc/malloc.pb.go probes/io/io.pb.go probes/cpu/cpu.pb.go probes/vfs/vfs.pb.go probes/funclat/funclat.pb.go
 
 delete-docker-image:
 	$(SUDO) docker rmi -f $(DOCKER_IMAGE)

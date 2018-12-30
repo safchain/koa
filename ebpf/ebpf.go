@@ -79,6 +79,13 @@ func EnableUProbe(module *ebpelf.Module, probe string, fnc string, path string) 
 		return err
 	}
 
+	var bAddr uint64
+	for _, prog := range file.Progs {
+		if prog.Type == elf.PT_LOAD && (prog.Flags&elf.PF_X) > 0 {
+			bAddr = prog.Vaddr
+		}
+	}
+
 	symbols, err := file.Symbols()
 	if err != nil {
 		return err
@@ -92,8 +99,14 @@ func EnableUProbe(module *ebpelf.Module, probe string, fnc string, path string) 
 		}
 	}
 
+	if offset < bAddr {
+		return fmt.Errorf("Wrong symbol offset: %s", fnc)
+	}
+	offset -= bAddr
+
 	for uprobe := range module.IterUprobes() {
 		if uprobe.Name == probe {
+			fmt.Printf(">>>>>>>>>>>>>>>>: %s %d\n", path, offset)
 			if err := ebpelf.AttachUprobe(uprobe, path, offset); err != nil {
 				return err
 			}

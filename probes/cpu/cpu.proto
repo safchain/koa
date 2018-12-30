@@ -28,9 +28,9 @@ message CPUEntry {
     string Type = 1;
     int64 PID = 2;
     string ProcessName = 3;
-    int64 Nanoseconds = 4;
-    int64 Timestamp = 5;
+    int64 RunID = 4;
+    string Tag = 5;
+    int64 Timestamp = 6;
 
-    int64 RunID = 100;
-    string Tag = 101;
+    int64 Nanoseconds = 100;
 }

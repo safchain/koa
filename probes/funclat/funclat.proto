@@ -22,9 +22,9 @@
 
 syntax = "proto3";
 
-package malloc;
+package funclat;
 
-message MallocEntry {
+message FuncLatEntry {
     string Type = 1;
     int64 PID = 2;
     string ProcessName = 3;
@@ -32,5 +32,7 @@ message MallocEntry {
     string Tag = 5;
     int64 Timestamp = 6;
 
-    int64 Bytes = 100;
+    string FuncName = 100;
+    int64 Calls = 101;
+    int64 Nanoseconds = 102;
 }

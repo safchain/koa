@@ -27,15 +27,15 @@ package io;
 message IOEntry {
     string Type = 1;
     int64 PID = 2;
-    string ProcessName = 4;
-    string Device = 5;
-    int64 RIO = 7;
-    int64 RBytes = 8;
-    int64 WIO = 9;
-    int64 WBytes = 10;
-    int64 Timestamp = 11;
+    string ProcessName = 3;
+    int64 RunID = 4;
+    string Tag = 5;
+    int64 Timestamp = 6;
 
-    int64 RunID = 100;
-    string Tag = 101;
+    string Device = 100;
+    int64 RIO = 101;
+    int64 RBytes = 102;
+    int64 WIO = 103;
+    int64 WBytes = 104;
 }
 
