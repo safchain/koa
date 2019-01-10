@@ -24,6 +24,8 @@ package probes
 
 import (
 	"sync"
+
+	"github.com/safchain/koa/api/types"
 )
 
 const (
@@ -55,7 +57,7 @@ func (f *Filters) AddPIDs(pid ...int64) {
 	f.Unlock()
 }
 
-func (f *Filters) IsMatching(entry Entry) bool {
+func (f *Filters) IsMatching(entry types.ProcEntry) bool {
 	if (f.Flags & PIDFilter) > 0 {
 		return !f.ContainsPID(entry.GetPID())
 	}

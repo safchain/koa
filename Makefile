@@ -8,7 +8,7 @@ DOCKER_IMAGE?=safchain/ebpf-builder
 # If you can use docker without being root, you can do "make SUDO="
 SUDO=$(shell docker info >/dev/null 2>&1 || echo "sudo -E")
 
-all: build-docker-image build-ebpf-object mon
+all: build-docker-image build-ebpf-object ebperf collector
 
 build-docker-image:
 	$(SUDO) docker build -t $(DOCKER_IMAGE) -f $(DOCKER_FILE) .
@@ -22,25 +22,20 @@ build-ebpf-object:
 	sudo chown -R $(UID):$(UID) ebpf
 
 .PHONY: mon
-mon: proto
-	go build -ldflags="-s -w" cmd/mon.go
+ebperf: proto
+	go build -ldflags="-s -w" cmd/ebperf/ebperf.go
 
-probes/malloc/malloc.pb.go: probes/malloc/malloc.proto
-	protoc --go_out=. probes/malloc/malloc.proto
+.PHONY: collector
+collector:
+	go build -ldflags="-s -w" cmd/collector/collector.go
 
-probes/io/io.pb.go: probes/io/io.proto
-	protoc --go_out=. probes/io/io.proto
+api/types/proc.pb.go: api/types/proc.proto
+	protoc --go_out=. api/types/proc.proto
 
-probes/cpu/cpu.pb.go: probes/cpu/cpu.proto
-	protoc --go_out=. probes/cpu/cpu.proto
+api/api.pb.go: api/types/proc.proto api/api.proto
+	protoc --go_out=plugins=grpc:. api/api.proto
 
-probes/vfs/vfs.pb.go: probes/vfs/vfs.proto
-	protoc --go_out=. probes/vfs/vfs.proto
-
-probes/fnc/fnc.pb.go: probes/fnc/fnc.proto
-	protoc --go_out=. probes/fnc/fnc.proto
-
-proto: probes/malloc/malloc.pb.go probes/io/io.pb.go probes/cpu/cpu.pb.go probes/vfs/vfs.pb.go probes/fnc/fnc.pb.go
+proto: api/types/proc.pb.go api/api.pb.go
 
 delete-docker-image:
 	$(SUDO) docker rmi -f $(DOCKER_IMAGE)

@@ -22,8 +22,8 @@
 
 package sender
 
-import "github.com/safchain/koa/probes"
+import "github.com/safchain/koa/api/types"
 
 type Sender interface {
-	Send(entry probes.Entry) error
+	Send(entry types.ProcEntry) error
 }

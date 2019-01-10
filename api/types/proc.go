@@ -20,17 +20,28 @@
  *
  */
 
-syntax = "proto3";
+package types
 
-package cpu;
+type ProcEntry interface {
+	GetPID() int64
+}
 
-message CPUEntry {
-    string Type = 1;
-    int64 PID = 2;
-    string ProcessName = 3;
-    int64 RunID = 4;
-    string Tag = 5;
-    int64 Timestamp = 6;
+func (m *ProcMallocEntry) GetPID() int64 {
+	return m.Header.PID
+}
 
-    int64 Nanoseconds = 100;
+func (m *ProcIOEntry) GetPID() int64 {
+	return m.Header.PID
+}
+
+func (m *ProcFncEntry) GetPID() int64 {
+	return m.Header.PID
+}
+
+func (m *ProcCPUEntry) GetPID() int64 {
+	return m.Header.PID
+}
+
+func (m *ProcVFSEntry) GetPID() int64 {
+	return m.Header.PID
 }

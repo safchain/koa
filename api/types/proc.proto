@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Sylvain Afchain
+ * Copyright (C) 2019 Sylvain Afchain
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,15 +22,27 @@
 
 syntax = "proto3";
 
-package io;
+package types;
 
-message IOEntry {
+option go_package = "github.com/safchain/koa/api/types";
+
+message ProcEntryHeader {
     string Type = 1;
     int64 PID = 2;
     string ProcessName = 3;
     int64 RunID = 4;
     string Tag = 5;
     int64 Timestamp = 6;
+}
+
+message ProcMallocEntry {
+    ProcEntryHeader Header = 1;
+
+    int64 Bytes = 100;
+}
+
+message ProcIOEntry {
+    ProcEntryHeader Header = 1;
 
     string Device = 100;
     int64 RIO = 101;
@@ -39,3 +51,25 @@ message IOEntry {
     int64 WBytes = 104;
 }
 
+message ProcFncEntry {
+    ProcEntryHeader Header = 1;
+
+    string FuncName = 100;
+    int64 Calls = 101;
+}
+
+message ProcCPUEntry {
+    ProcEntryHeader Header = 1;
+
+    int64 Nanoseconds = 100;
+}
+
+message ProcVFSEntry {
+    ProcEntryHeader Header = 1;
+
+    int64 read = 100;
+    int64 write = 101;
+    int64 open = 102;
+    int64 create = 103;
+    int64 fsync = 104;
+}

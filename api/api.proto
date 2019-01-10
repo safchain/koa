@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Sylvain Afchain
+ * Copyright (C) 2019 Sylvain Afchain
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,8 +20,22 @@
  *
  */
 
-package probes
+syntax = "proto3";
 
-type Entry interface {
-	GetPID() int64
+package api;
+
+import "api/types/proc.proto";
+
+message Void{}
+
+message ProcEntryMessage {
+    types.ProcMallocEntry MallocEntry = 1;
+    types.ProcIOEntry IOEntry = 2;
+    types.ProcFncEntry FncEntry = 3;
+    types.ProcCPUEntry CPUEntry = 4;
+    types.ProcVFSEntry VFSEntry = 5;
+}
+
+service Collector {
+    rpc SendProcEntry(ProcEntryMessage) returns (Void) {}
 }

@@ -22,14 +22,17 @@
 
 package sender
 
-import "github.com/safchain/koa/probes"
+import (
+	"github.com/safchain/koa/api/types"
+	"github.com/safchain/koa/probes"
+)
 
 type Bundle struct {
 	senders []Sender
 	filters *probes.Filters
 }
 
-func (b *Bundle) Send(entry probes.Entry) error {
+func (b *Bundle) Send(entry types.ProcEntry) error {
 	if b.filters.IsMatching(entry) {
 		return nil
 	}

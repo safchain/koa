@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Sylvain Afchain
+ * Copyright (C) 2019 Sylvain Afchain
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,18 +20,32 @@
  *
  */
 
-syntax = "proto3";
+package main
 
-package fnc;
+import (
+	"fmt"
+	"log"
+	"net"
 
-message FncEntry {
-    string Type = 1;
-    int64 PID = 2;
-    string ProcessName = 3;
-    int64 RunID = 4;
-    string Tag = 5;
-    int64 Timestamp = 6;
+	"google.golang.org/grpc"
 
-    string FuncName = 100;
-    int64 Calls = 101;
+	"github.com/safchain/koa/api"
+)
+
+func main() {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 7777))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	s := api.Collector{}
+
+	grpcServer := grpc.NewServer()
+
+	api.RegisterCollectorServer(grpcServer, &s)
+
+	fmt.Println("Listening...")
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %s", err)
+	}
 }

@@ -30,6 +30,7 @@ import (
 	"unsafe"
 
 	"github.com/iovisor/gobpf/elf"
+	"github.com/safchain/koa/api/types"
 	"github.com/safchain/koa/ebpf"
 	"github.com/safchain/koa/probes"
 	"github.com/safchain/koa/sender"
@@ -85,14 +86,16 @@ func (p *Probe) read(cmap *elf.Map) {
 		key = nextKey
 
 		p.RLock()
-		entry := &CPUEntry{
-			Type:        Type,
-			PID:         int64(key),
-			ProcessName: C.GoString(&value.name[0]),
+		entry := &types.ProcCPUEntry{
+			Header: &types.ProcEntryHeader{
+				Type:        Type,
+				PID:         int64(key),
+				ProcessName: C.GoString(&value.name[0]),
+				Timestamp:   time.Now().UTC().Unix(),
+				RunID:       p.runID,
+				Tag:         p.tag,
+			},
 			Nanoseconds: int64(value.ns),
-			Timestamp:   time.Now().UTC().Unix(),
-			RunID:       p.runID,
-			Tag:         p.tag,
 		}
 		p.RUnlock()
 

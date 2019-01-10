@@ -106,7 +106,6 @@ func EnableUProbe(module *ebpelf.Module, probe string, fnc string, path string) 
 
 	for uprobe := range module.IterUprobes() {
 		if uprobe.Name == probe {
-			fmt.Printf(">>>>>>>>>>>>>>>>: %s %d\n", path, offset)
 			if err := ebpelf.AttachUprobe(uprobe, path, offset); err != nil {
 				return err
 			}

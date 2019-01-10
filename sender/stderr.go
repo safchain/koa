@@ -27,12 +27,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/safchain/koa/probes"
+	"github.com/safchain/koa/api/types"
 )
 
 type Stderr struct{}
 
-func (s *Stderr) Send(entry probes.Entry) error {
+func (s *Stderr) Send(entry types.ProcEntry) error {
 	b, err := json.Marshal(entry)
 	if err != nil {
 		return err

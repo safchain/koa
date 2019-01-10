@@ -219,11 +219,19 @@ var rootCmd = &cobra.Command{
 		child := make(chan os.Signal, 1)
 		signal.Notify(child, unix.SIGCHLD)
 
+		cc, err := sender.NewCollector()
+		if err != nil {
+			exit(err)
+		}
+
 		monitor := &Monitor{
 			Opts: probes.Opts{
 				Rate: 2 * time.Second,
 			},
-			Sender: sender.NewBundle(filters, &sender.Stderr{}),
+			Sender: sender.NewBundle(filters,
+				&sender.Stderr{},
+				cc,
+			),
 			probes: make(map[string]probes.Probe),
 		}
 

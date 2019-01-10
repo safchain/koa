@@ -25,14 +25,14 @@ package sender
 import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/safchain/koa/probes"
+	"github.com/safchain/koa/api/types"
 )
 
 type Postgres struct {
 	db *gorm.DB
 }
 
-func (p *Postgres) Send(entry probes.Entry) error {
+func (p *Postgres) Send(entry types.ProcEntry) error {
 	p.db.Create(entry)
 
 	return nil
@@ -41,10 +41,8 @@ func (p *Postgres) Send(entry probes.Entry) error {
 func NewPostgres(structs ...interface{}) (*Postgres, error) {
 	db, err := gorm.Open("postgres", "host=127.0.0.1 port=5432 user=postgres dbname=postgres password=mysecretpassword sslmode=disable")
 	if err != nil {
-		panic("failed to connect database")
+		return nil, err
 	}
-
-	//postgres:password@127.0.0.1:5432/postgres?sslmode=disable
 
 	for _, s := range structs {
 		db.AutoMigrate(s)

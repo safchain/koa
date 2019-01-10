@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Sylvain Afchain
+ * Copyright (C) 2019 Sylvain Afchain
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,17 +20,18 @@
  *
  */
 
-syntax = "proto3";
+package api
 
-package malloc;
+import (
+	"log"
 
-message MallocEntry {
-    string Type = 1;
-    int64 PID = 2;
-    string ProcessName = 3;
-    int64 RunID = 4;
-    string Tag = 5;
-    int64 Timestamp = 6;
+	"golang.org/x/net/context"
+)
 
-    int64 Bytes = 100;
+type Collector struct {
+}
+
+func (c *Collector) SendProcEntry(ctx context.Context, in *ProcEntryMessage) (*Void, error) {
+	log.Printf("Receive message %+v\n", in)
+	return &Void{}, nil
 }

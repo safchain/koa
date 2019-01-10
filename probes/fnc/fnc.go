@@ -33,6 +33,7 @@ import (
 
 	ebpelf "github.com/iovisor/gobpf/elf"
 
+	"github.com/safchain/koa/api/types"
 	"github.com/safchain/koa/ebpf"
 	"github.com/safchain/koa/probes"
 	"github.com/safchain/koa/sender"
@@ -130,15 +131,18 @@ func (p *Probe) read(cmap *ebpelf.Map) {
 		p.RUnlock()
 
 		p.RLock()
-		entry := &FncEntry{
-			Type:        Type,
-			PID:         int64(key.pid),
-			ProcessName: C.GoString(&value.name[0]),
-			FuncName:    funcName,
-			Calls:       int64(value.calls),
-			Timestamp:   time.Now().UTC().Unix(),
-			RunID:       p.runID,
-			Tag:         p.tag,
+		entry := &types.ProcFncEntry{
+			Header: &types.ProcEntryHeader{
+				Type:        Type,
+				PID:         int64(key.pid),
+				ProcessName: C.GoString(&value.name[0]),
+
+				Timestamp: time.Now().UTC().Unix(),
+				RunID:     p.runID,
+				Tag:       p.tag,
+			},
+			FuncName: funcName,
+			Calls:    int64(value.calls),
 		}
 		p.RUnlock()
 
