@@ -23,14 +23,14 @@ build-ebpf-object:
 
 .PHONY: mon
 ebperf: proto
-	go build -ldflags="-s -w" cmd/ebperf/ebperf.go
+	go install -ldflags="-s -w" ./cmd/ebperf/...
 
 .PHONY: collector
 collector:
-	go build -ldflags="-s -w" cmd/collector/collector.go
+	go install -ldflags="-s -w" ./cmd/collector/...
 
 api/types/proc.pb.go: api/types/proc.proto
-	protoc --go_out=. api/types/proc.proto
+	protoc --go_out=$$GOPATH/src api/types/proc.proto
 
 api/api.pb.go: api/types/proc.proto api/api.proto
 	protoc --go_out=plugins=grpc:. api/api.proto

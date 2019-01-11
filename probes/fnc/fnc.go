@@ -132,17 +132,14 @@ func (p *Probe) read(cmap *ebpelf.Map) {
 
 		p.RLock()
 		entry := &types.ProcFncEntry{
-			Header: &types.ProcEntryHeader{
-				Type:        Type,
-				PID:         int64(key.pid),
-				ProcessName: C.GoString(&value.name[0]),
-
-				Timestamp: time.Now().UTC().Unix(),
-				RunID:     p.runID,
-				Tag:       p.tag,
-			},
-			FuncName: funcName,
-			Calls:    int64(value.calls),
+			Type:        Type,
+			PID:         int64(key.pid),
+			ProcessName: C.GoString(&value.name[0]),
+			Timestamp:   time.Now().UTC().Unix(),
+			RunID:       p.runID,
+			Tag:         p.tag,
+			FuncName:    funcName,
+			Calls:       int64(value.calls),
 		}
 		p.RUnlock()
 

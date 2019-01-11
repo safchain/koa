@@ -91,19 +91,17 @@ func (p *Probe) read(cmap *elf.Map) {
 
 		p.RLock()
 		entry := &types.ProcVFSEntry{
-			Header: &types.ProcEntryHeader{
-				Type:        Type,
-				PID:         int64(key),
-				ProcessName: C.GoString(&value.name[0]),
-				Timestamp:   time.Now().UTC().Unix(),
-				RunID:       p.runID,
-				Tag:         p.tag,
-			},
-			Read:   int64(value.read),
-			Write:  int64(value.write),
-			Open:   int64(value.open),
-			Create: int64(value.create),
-			Fsync:  int64(value.fsync),
+			Type:        Type,
+			PID:         int64(key),
+			ProcessName: C.GoString(&value.name[0]),
+			Timestamp:   time.Now().UTC().Unix(),
+			RunID:       p.runID,
+			Tag:         p.tag,
+			Read:        int64(value.read),
+			Write:       int64(value.write),
+			Open:        int64(value.open),
+			Create:      int64(value.create),
+			Fsync:       int64(value.fsync),
 		}
 		p.RUnlock()
 

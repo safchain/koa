@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Sylvain Afchain
+ * Copyright (C) 2019 Sylvain Afchain
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,35 +20,10 @@
  *
  */
 
-package sender
+package storage
 
-import (
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/safchain/koa/api/types"
-)
+import "github.com/safchain/koa/api/types"
 
-type Postgres struct {
-	db *gorm.DB
-}
-
-func (p *Postgres) Send(entry types.ProcEntry) error {
-	p.db.Create(entry)
-
-	return nil
-}
-
-func NewPostgres(structs ...interface{}) (*Postgres, error) {
-	db, err := gorm.Open("postgres", "host=127.0.0.1 port=5432 user=postgres dbname=postgres password=mysecretpassword sslmode=disable")
-	if err != nil {
-		return nil, err
-	}
-
-	for _, s := range structs {
-		db.AutoMigrate(s)
-	}
-
-	return &Postgres{
-		db: db,
-	}, nil
+type Storage interface {
+	Store(entry types.ProcEntry) error
 }

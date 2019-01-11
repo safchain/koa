@@ -25,23 +25,3 @@ package types
 type ProcEntry interface {
 	GetPID() int64
 }
-
-func (m *ProcMallocEntry) GetPID() int64 {
-	return m.Header.PID
-}
-
-func (m *ProcIOEntry) GetPID() int64 {
-	return m.Header.PID
-}
-
-func (m *ProcFncEntry) GetPID() int64 {
-	return m.Header.PID
-}
-
-func (m *ProcCPUEntry) GetPID() int64 {
-	return m.Header.PID
-}
-
-func (m *ProcVFSEntry) GetPID() int64 {
-	return m.Header.PID
-}

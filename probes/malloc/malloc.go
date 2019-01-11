@@ -88,15 +88,13 @@ func (p *Probe) read(cmap *elf.Map) {
 
 		p.RLock()
 		entry := &types.ProcMallocEntry{
-			Header: &types.ProcEntryHeader{
-				Type:        Type,
-				PID:         int64(key),
-				ProcessName: C.GoString(&value.name[0]),
-				Timestamp:   time.Now().UTC().Unix(),
-				RunID:       p.runID,
-				Tag:         p.tag,
-			},
-			Bytes: int64(value.bytes),
+			Type:        Type,
+			PID:         int64(key),
+			ProcessName: C.GoString(&value.name[0]),
+			Timestamp:   time.Now().UTC().Unix(),
+			RunID:       p.runID,
+			Tag:         p.tag,
+			Bytes:       int64(value.bytes),
 		}
 		p.RUnlock()
 

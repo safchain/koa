@@ -20,46 +20,44 @@
  *
  */
 
-package main
+package collector
 
 import (
-	"fmt"
 	"log"
-	"net"
-
-	"google.golang.org/grpc"
 
 	"github.com/safchain/koa/api"
-	"github.com/safchain/koa/api/types"
-	"github.com/safchain/koa/collector"
 	"github.com/safchain/koa/collector/storage"
+	"golang.org/x/net/context"
 )
 
-func main() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 7777))
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+type Collector struct {
+	storage storage.Storage
+}
+
+func (c *Collector) SendProcEntry(ctx context.Context, in *api.ProcEntryMessage) (*api.Void, error) {
+	log.Printf("Receive message %+v\n", in)
+
+	if in.VFSEntry != nil {
+		c.storage.Store(in.VFSEntry)
+	}
+	if in.FncEntry != nil {
+		c.storage.Store(in.FncEntry)
+	}
+	if in.IOEntry != nil {
+		c.storage.Store(in.IOEntry)
+	}
+	if in.MallocEntry != nil {
+		c.storage.Store(in.MallocEntry)
+	}
+	if in.CPUEntry != nil {
+		c.storage.Store(in.CPUEntry)
 	}
 
-	postgres, err := storage.NewPostgres(
-		types.ProcCPUEntry{},
-		types.ProcFncEntry{},
-		types.ProcIOEntry{},
-		types.ProcMallocEntry{},
-		types.ProcVFSEntry{},
-	)
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
+	return &api.Void{}, nil
+}
 
-	c := collector.NewCollector(postgres)
-
-	grpcServer := grpc.NewServer()
-
-	api.RegisterCollectorServer(grpcServer, c)
-
-	fmt.Println("Listening...")
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %s", err)
+func NewCollector(storage storage.Storage) *Collector {
+	return &Collector{
+		storage: storage,
 	}
 }

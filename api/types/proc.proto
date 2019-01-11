@@ -26,23 +26,24 @@ package types;
 
 option go_package = "github.com/safchain/koa/api/types";
 
-message ProcEntryHeader {
+message ProcMallocEntry {
     string Type = 1;
     int64 PID = 2;
     string ProcessName = 3;
     int64 RunID = 4;
     string Tag = 5;
     int64 Timestamp = 6;
-}
-
-message ProcMallocEntry {
-    ProcEntryHeader Header = 1;
 
     int64 Bytes = 100;
 }
 
 message ProcIOEntry {
-    ProcEntryHeader Header = 1;
+    string Type = 1;
+    int64 PID = 2;
+    string ProcessName = 3;
+    int64 RunID = 4;
+    string Tag = 5;
+    int64 Timestamp = 6;
 
     string Device = 100;
     int64 RIO = 101;
@@ -52,20 +53,35 @@ message ProcIOEntry {
 }
 
 message ProcFncEntry {
-    ProcEntryHeader Header = 1;
+    string Type = 1;
+    int64 PID = 2;
+    string ProcessName = 3;
+    int64 RunID = 4;
+    string Tag = 5;
+    int64 Timestamp = 6;
 
     string FuncName = 100;
     int64 Calls = 101;
 }
 
 message ProcCPUEntry {
-    ProcEntryHeader Header = 1;
+    string Type = 1;
+    int64 PID = 2;
+    string ProcessName = 3;
+    int64 RunID = 4;
+    string Tag = 5;
+    int64 Timestamp = 6;
 
     int64 Nanoseconds = 100;
 }
 
 message ProcVFSEntry {
-    ProcEntryHeader Header = 1;
+    string Type = 1;
+    int64 PID = 2;
+    string ProcessName = 3;
+    int64 RunID = 4;
+    string Tag = 5;
+    int64 Timestamp = 6;
 
     int64 read = 100;
     int64 write = 101;
